@@ -1,0 +1,34 @@
+<html>
+
+<head>
+    <meta http-equiv="expires" content="0">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta http-equiv="pragma" content="no-cache">
+    <SCRIPT language=JavaScript>
+        var submit_button = 'index.asp';
+
+        function to_submit() {
+            if (submit_button == "") history.go(-1);
+            else if (submit_button == "WL_WEPTable.asp") self.close();
+            else document.location.href = submit_button;
+        }
+    </SCRIPT>
+</head>
+
+<body bgcolor="black">
+    <form>
+        <center>
+            <table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=557>
+                <tr BGCOLOR="white">
+                    <th HEIGHT=400><font face="Verdana" size=4 color="red">Safe Mode upgrade cancel, rebooting...</font>
+                        <p>
+                            <p>
+                                <input type=button name=action value=Continue onClick=to_submit()>
+                    </th>
+                </tr>
+            </table>
+        </center>
+    </form>
+</body>
+
+</html>

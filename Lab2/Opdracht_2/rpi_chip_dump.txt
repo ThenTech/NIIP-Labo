@@ -1,0 +1,16 @@
+Chipname
+chip1	MX25L6406E/MX25L6408E
+chip2	Winbond 25Q64BVSIG	flashrom name: W25Q64.V
+
+flashrom -VVV -p linux_spi:dev=/dev/spidev0.0,spispeed=1000 -r chip1.rom -c "MX25L6406E/MX25L6408E"
+flashrom -VVV -p linux_spi:dev=/dev/spidev0.0,spispeed=1000 -r chip2.rom -c W25Q64.V
+
+
+
+test SPI
+sudo pigpiod
+pigs spio 0 50000 0
+> 0
+pigs spix 0 10 20 30 40 50
+> 5 10 20 30 40 50   if ok
+> 5 0 0 0 0 0  	     if not ok

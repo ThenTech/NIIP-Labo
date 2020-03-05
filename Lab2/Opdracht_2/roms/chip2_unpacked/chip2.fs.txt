@@ -1,0 +1,20 @@
+
+DECIMAL       HEXADECIMAL     DESCRIPTION
+--------------------------------------------------------------------------------
+200068        0x30D84         Copyright string: "Copyright (C) 2000-2008 Broadcom Corporation."
+213832        0x34348         CRC32 polynomial table, little endian
+225112        0x36F58         HTML document header
+226218        0x373AA         HTML document footer
+226228        0x373B4         HTML document header
+226343        0x37427         HTML document footer
+226352        0x37430         HTML document header
+226754        0x375C2         HTML document footer
+226764        0x375CC         HTML document header
+227188        0x37774         HTML document footer
+227196        0x3777C         HTML document header
+227924        0x37A54         HTML document header
+228642        0x37D22         HTML document footer
+262144        0x40000         TRX firmware header, little endian, image size: 7274496 bytes, CRC32: 0x45A5B943, flags: 0x0, version: 1, header size: 28 bytes, loader offset: 0x1C, linux kernel offset: 0x16F970, rootfs offset: 0x0
+262172        0x4001C         gzip compressed data, maximum compression, has original file name: "piggy", from Unix, last modified: 2011-05-06 02:18:47
+1767792       0x1AF970        Squashfs filesystem, little endian, non-standard signature, version 3.0, size: 5763971 bytes, 1313 inodes, blocksize: 65536 bytes, created: 2011-05-06 02:23:24
+

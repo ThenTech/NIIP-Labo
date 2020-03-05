@@ -1,0 +1,33 @@
+<html>
+
+<head>
+    <SCRIPT language=JavaScript>
+        function returnpage() {
+            document.location.href = "index.asp";
+        }
+
+        function init() {
+            if (wait_time != "0" && wait_time != "") {
+                DelayTime = wait_time * 1000;
+                setTimeout('returnpage()', DelayTime);
+            }
+        }
+    </SCRIPT>
+</head>
+
+<body bgcolor="black" onload=init()>
+    <form name=success>
+        <center>
+            <table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=557>
+                <tr BGCOLOR="white">
+                    <th HEIGHT=400><font face="Verdana" size=4 color="red">Never interrupt, please wait...</font>
+                        <script>
+                            var wait_time = 120;
+                            document.write("<p><font face=Verdana size=2 color=black>You will get the result page after 60 seconds.");
+                        </script>
+                    </th>
+                </tr>
+            </table>
+        </center>
+</body>
+</form>

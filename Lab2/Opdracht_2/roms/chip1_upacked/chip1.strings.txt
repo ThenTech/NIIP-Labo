@@ -1,0 +1,948 @@
+Sitelboot 1.0.3 (Oct 29 2013 - 09:19:20)
+### ERROR ### Please RESET the board ###
+** Too many args (max. %d) **
+Unknown command '%s' - try 'help'
+Usage:
+'bootd' recursion detected
+....AutoBoot for SiTel 450 DK....
+boot_from
+tftp-eth0
+A command for booting via TFTP was not found! Setting default as:
+	tftpboot 0x00a00000 vmlinuz; bootm 0x00a00000
+You can change it by issuing:
+	setenv script_tftp tftpboot 0xaddress\; bootm 0xaddress
+	saveenv
+tftpboot 0x00a00000 vmlinuz; bootm 0x00a00000
+saveenv
+Booting via TFTP...
+Boot command is: %s
+You can change it by issuing:
+	setenv script_tftp tftpboot 0xaddress vmlinuz\; bootm 0xaddress
+	saveenv
+run script_tftp
+flash
+Booting from flash memory...
+boot_from_image_no
+bootm 
+1st_boot_pos
+2nd_boot_pos
+rec_boot_pos
+Booting from '%s'
+Boot failed!
+Change default boot from '%c'
+ to '%c' 
+Environment variable 'boot_from' set to an invalid value ('%s')...
+Please set it to:
+	'tftp-eth0'  to boot from a PC usign Ethernet 0 or
+	'flash'      to boot from FLASH
+Environment variable boot_from not set!
+Please set it to:
+	'tftp-eth0'  to boot from a PC usign Ethernet 0 or
+	'flash'      to boot from FLASH
+AutoBoot stops...
+bootdelay
+bootretry
+bootcmd
+Hit any key to stop autoboot: %2d 
+%2d 
+Will start recovery image
+Will start Linux with env. 'factory_reset=true'
+Gigaset # 
+Timed out waiting for command
+<INTERRUPT>
+- No help available.
+Unknown command '%s' - try 'help' without arguments for list of all known commands
+go      - start application at address 'addr'
+addr [arg ...]
+    - start application at address 'addr'
+      passing 'arg' as arguments
+run     - run commands in an environment variable
+var [...]
+    - run the commands in the environment variable(s) 'var'
+bootm
+bootm   - boot application image from memory
+[addr [arg ...]]
+    - boot application image stored in memory
+        passing arguments 'arg ...'; when booting a Linux kernel,
+        'arg' can be the address of an initrd image
+bootp
+bootp   - boot image via network using BootP/TFTP protocol
+[loadAddress] [bootfilename]
+tftpboot
+tftpboot- boot image via network using TFTP protocol
+               and env variables ipaddr and serverip
+rarpboot
+rarpboot- boot image via network using RARP/TFTP protocol
+dhcp
+dhcp    - invoke DHCP client to obtain IP/boot params
+upgrade
+upgrade - get an image via TFTP and write it to FLASH
+[imagename] [SDRAM loadAddress] [FLASH writeAddress]
+bootd
+bootd   - boot default, i.e., run 'bootcmd'
+loads
+loads   - load S-Record file over serial line
+[ off ]
+    - load S-Record file over serial line with offset 'off'
+loadb
+loadb   - load binary file over serial line (kermit mode)
+[ off ] [ baud ]
+    - load binary file over serial line with offset 'off' and baudrate 'baud'
+autoscr
+autoscr - run script from memory
+[addr] - run script starting at addr. A valid autoscr header must be present
+md      - memory display (only RAM)
+[.b, .w, .l] address [# of objects]
+    - memory display
+mm      - memory modify (auto-incrementing)
+[.b, .w, .l] address
+    - memory modify, auto increment address
+nm      - memory modify (constant address)
+[.b, .w, .l] address
+    - memory modify, read and keep address
+mw      - memory write (fill)
+[.b, .w, .l] address value [count]
+    - write memory
+cp      - memory copy
+[.b, .w, .l] source target count
+    - copy memory
+ecp     - memory copy with Flash erase
+[.b, .w, .l] source target count
+    - copy memory after erasing the corresponding area in Flash
+cmp     - memory compare
+[.b, .w, .l] addr1 addr2 count
+    - compare memory
+crc32
+crc32   - checksum calculation
+address count
+    - compute CRC32 checksum
+base
+base    - print or set address offset
+    - print address offset for memory commands
+base off
+    - set address offset for memory commands to 'off'
+printenv
+printenv- print environment variables
+    - print values of all environment variables
+printenv name ...
+    - print value of environment variable 'name'
+setenv
+setenv  - set environment variables
+name value ...
+    - set environment variable 'name' to 'value ...'
+setenv name
+    - delete environment variable 'name'
+saveenv - save environment variables to persistent storage
+protect
+protect - enable or disable FLASH write protection
+on  start end
+    - protect FLASH from addr 'start' to addr 'end'
+protect on  N:SF[-SL]
+    - protect sectors SF-SL in FLASH bank # N
+protect on  bank N
+    - protect FLASH bank # N
+protect on  all
+    - protect all FLASH banks
+protect off start end
+    - make FLASH from addr 'start' to addr 'end' writable
+protect off N:SF[-SL]
+    - make sectors SF-SL writable in FLASH bank # N
+protect off bank N
+    - make FLASH bank # N writable
+protect off all
+    - make all FLASH banks writable
+erase
+erase   - erase FLASH memory
+start end
+    - erase FLASH from addr 'start' to addr 'end'
+erase N:SF[-SL]
+    - erase sectors SF-SL in FLASH bank # N
+erase bank N
+    - erase FLASH bank # N
+erase all
+    - erase all FLASH banks
+flinfo
+flinfo  - print FLASH memory information
+    - print information for all FLASH memory banks
+flinfo N
+    - print information for FLASH memory bank # N
+bdinfo
+bdinfo  - print Board Info structure
+iminfo
+iminfo  - print header information for application image
+addr [addr ...]
+    - print header information for application image starting at
+      address 'addr' in memory; this includes verification of the
+      image contents (magic number, header and payload checksums)
+loop
+loop    - infinite loop on address range
+[.b, .w, .l] address number_of_objects
+    - loop on a set of addresses
+mtest
+mtest   - simple RAM test
+    - simple SDRAM read/write test
+reset
+reset   - Perform RESET of the CPU
+echo    - echo args to console
+[args..]
+    - echo args to console; \c suppresses newline
+sleep
+sleep   - delay execution for some time
+    - delay execution for N seconds (N is _decimal_ !!!)
+version
+version - print monitor version
+help
+help    - print online help
+[command ...]
+    - show help information (for 'command')
+'help' prints online help for the monitor commands.
+Without arguments, it prints a short usage message for all commands.
+To get detailed help information for specific commands you can type
+'help' with one or more command names as arguments.
+?       - alias for 'help'
+## Starting application at 0x%08lx ...
+## Application terminated, rc = 0x%lx
+## Switch baudrate to %d bps and press ENTER ...
+## Ready for binary (kermit) download ...
+## Binary (kermit) download aborted
+## Start Addr      = 0x%08lx
+## Switch baudrate to %d bps and press ESC ...
+loads_echo
+## Ready for S-Record download ...
+Error: Timeout writing to Flash
+Error: Flash not Erased
+Error: Can't write to protected Flash sectors
+cmd_boot.c
+%s[%d] FIXME: rc=%d
+## First Load Addr = 0x%08lx
+## Last  Load Addr = 0x%08lx
+## Total Size      = 0x%08lx = %ld Bytes
+## S-Record download aborted
+enetaddr      =
+%c%02X
+ip_addr       = 
+baudrate      = %d bps
+arch_number   = %ld
+env_t         = %08lX
+boot_params   = %08lX
+DRAM:%02d.start = %08lX
+DRAM:%02d.size  = %08lX
+   Image Name:   %.*s
+   Image Type:   
+ARMBoot
+Unknown OS
+Invalid OS
+NetBSD
+Linux
+CR16C+ 16 Bit
+Unknown Architecture
+Invalid CPU
+Alpha
+Intel x86
+IA64
+MIPS
+MIPS 64 Bit
+PowerPC
+IBM S390
+SuperH
+SPARC
+SPARC 64 Bit
+Firmware
+Unknown Image
+Invalid Image
+Standalone Program
+Kernel Image
+RAMDisk Image
+Multi-File Image
+bzip2 compressed
+unknown compression
+uncompressed
+gzip compressed
+%s %s %s (%s)
+   Data Size:    %d Bytes = %d kB = %d MB
+   Load Address: %08x
+   Entry Point:  %08x
+   Contents:
+   Image %d: %8ld Bytes = %ld kB = %ld MB
+Error: Bad gzipped data
+Error: gunzip out of data in header
+Error: inflateInit2() returned %d
+Error: inflate() returned %d
+## Checking Image at %08lx ...
+   Bad Magic Number
+   Bad Header Checksum
+   Verifying Checksum ... 
+   Bad Data CRC
+verify
+## Booting image at %08lx ...
+Bad Magic Number
+Bad Header Checksum
+## Copy image from flash %08lx to ram %08lx ...
+Bad Data CRC
+Unsupported Architecture
+Standalone Application
+Wrong Image Type for %s command
+   Loading %s ... 
+   Uncompressing %s ... 
+GUNZIP ERROR - must RESET board to recover
+Unimplemented compression type %d
+Can't boot image type %d
+## Control returned to monitor
+%sProtected %d sectors
+%sProtect Flash Bank # %ld
+Bad sector specification
+%sProtect Flash Sectors %d-%d in Bank # %d
+bank
+Only FLASH Banks # 1 ... # %d supported
+missing or unknown FLASH type
+Erase Flash Bank # %ld:
+Done.
+Erase Flash Sectors %d-%d in Bank # %d:
+done.
+Erase Flash from 0x%08lx to 0x%08lx... 
+done.
+Erased %d sectors.
+Bank # %ld: 
+halfword
+byte
+Total of %ld %s%s were the same
+Mem error @ 0x%08x: found %08x, expected 0x%08x
+Test aborted
+Base Address: 0x%08lx
+word at 0x%08lx (0x%08lx) != word at 0x%08lx (0x%08lx)
+halfword at 0x%08lx (0x%04x) != halfword at 0x%08lx (0x%04x)
+byte at 0x%08lx (0x%02x) != byte at 0x%08lx (0x%02x)
+%08lx:
+ %08x
+ %04x
+ %02x
+    
+CRC32 for %08lx ... %08lx ==> %08lx
+SDRAM Bank #0: test start... 
+SDRAM Bank #0 test end... 
+SDRAM Bank #1: test start... 
+SDRAM Bank #1 test end... 
+Erasing Flash... 
+Copy to Flash... 
+Target address is not in Flash address space. Use cp instead!
+Both addresses in flash, cannot copy!
+Copy from Flash... 
+gatewayip
+netmask
+hostname
+rootpath
+ipaddr
+serverip
+dnsip
+autostart
+Automatic boot of image at addr 0x%08lX ...
+Could not allocate memory!
+*** 1st step - TFTP image to SDRAM
+String %s too big!
+*** Executing command: %s %s %s
+Bad Magic Number in image (%08lx) @%08lx
+Image Magic Number is correct
+filesize
+The image is suspiciously small (%d bytes)...
+Aborting upgrade...
+The image is too big (%d bytes) to fit in the reserved flash partition (%d bytes)
+Bad header CRC!
+Aborting upgrade...
+Image header:
+Checking image CRC...
+Bad image CRC!
+Aborting upgrade...
+Image looks OK, continuing.
+*** 2nd step - write image to FLASH
+ecp.w
+*** Will write %d (0x%s) bytes to FLASH... ***
+    ...which results into %d 16-bit words
+*** Executing command: %s %s %s %s
+bad size for get_env_char!
+*** CRC error. Restoring default environment
+ethaddr
+loadaddr
+bootfile
+## Baudrate %d bps not supported
+## Error: environment overflow, "%s" deleted
+baudrate
+ ** Abort
+Environment size: %d/%d bytes
+## Error: "%s" not defined
+Bad magic number
+Bad header crc
+Bad data crc
+Bad image type
+## Executing script at %08lx
+Outside available Flash
+Start and/or end address not on sector boundary
+Unknown Vendor of Flash
+Unknown Type of Flash
+General Flash Programming Error
+flash.c
+Start address must be multiply of erase size=0x%08X !
+Invalid start or end address (0x%8x, 0x%8x - {%p, %p})
+Unlocked
+A6Y2gENH16GMuShXBGNiuJoZcGbIf2YLxZYM537nbXxGPXlof6khAknHEp1xsTcuB02uiSzl02WmT8EHPrtKTETThmFE6FnE93euh8A7TCBUbwI0N6kCtC5fXZS7QuY7ESh4mLcG8xbSuNBpjmNGRTjcH1lhd76TOVsAHfKGke30ipVjuTJ5hkDNVR7nrHmldBesXBsGOanj4Q79J8bnl3IodFvTFnS4z6KL9xp9YnnzrLFfH6e6Q1UqzVeu7ZGIizYxc9ZK6KzDFZO2uXyycsU4pSyRUg1cTjov24ckzfZ6Vz1AHzf9zoGDWFO1BpTuQuNy1YnjsSwRtsCjjf7NmWYI2uakOViMIIZq03kFxLrhpCZWYIwjOvB8skjaQS5ExIBsNRuJxFsQUqPyzRaTrJFYVT8rCaQIrURiYVZ6IDMo2Tw1TElE1N5bjaKYmOj5vXQXROKZQQ0E4p3LGXEvocBtZYlWLK1PLrb40q2eb8xy0KjwG4XMrueUIHZ2LzyVFpkbXAZbCP7VHRHWN6bS4PNNNBbDTqv3HdLizEbWLxOab3fQ72rSJ63522W60biYmZ3ygcsllhcz7WkOTKXtviWehKokEq8ICX1fRmKVnTPRRd3VGp7avJsay5yaIRfZ862p10EdY8KrfSBu2wCyny09nfayyVYLqXlIFuIh6qN6CDxXbsRgiZ4ZVy23RN0wWtHJQL8wn0mSNs2Ne5fqHS4VINstnfKcy40jenyc3b96aLHvRU6LlgalOOPKZRf4qrO6TYjzOVw3iVGgxtatoMo1dKHLqmqpWqopqZITf52NMO0ZVmKq7Pic3yI4ltLwPJocXYsRVCSWy0Y9WPOWqSe6XIP88lGcDADdT2o3mEzErQFMDNri6ATt2ApexTeVteGwcfw4eObYam9HiHuRFfS564tXw6sisy5hDLZlGbzHhxhKlcg6uEy6o7WxXri9pXKItB0YTQhzMgTP9NdiUldcKoz7EvqnKmUjlIYe
+system_locked
+0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+0123456789abcdefghijklmnopqrstuvwxyz
+<NULL>
+%ld MB
+%ld KB
+FLASH Configuration:
+Bank #%d: %08lx 
+DRAM Configuration:
+    ,;:.                                        	
+  ;;;;;;;                                   :,		
+ ;;:    .                                   ;;		
+ ;;        ,   `;;;.  `:;;,   .;;:   `;;:  :;;:,	
+,;`       `;  :;;:;;, :;,:;: ,;:.;  .;;,;; ;;;;	
+:;        `;  ;:   ;,     :; ;;     ;:   ;. ;;		
+:;    ;;;.`; ,;    ;,  .:;;; ,;;.  `;....;: ;;		
+,;`   ..;.`; :;    ;, ;;,.:;  .;;; `;;;;;;: ;;		
+ ;;     ;.`; ,;`   ;,.;   :;    `;; ;`      ;;		
+ :;;   `;.`;  ;;  ,;,`;`  :; `   ;; ;;   .  ;;		
+  ,;;;;;;``;  `;;;;;, ;;;;:; ;;;;;   ;;;;;  ,;;;	
+    `..            :,  ``      .`     `.`     .	
+                  `:.                           	
+              ::.,::                            	
+              `::::								
+Runing on SC14452 SoC 
+SiTelboot 
+		code: %08lx -> %08lx
+		data: %08lx -> %08lx
+file error
+stream error
+data error
+insufficient memory
+buffer error
+unknown compression method
+invalid window size
+invalid reserved bit
+incorrect header check
+invalid block type
+invalid stored block lengths
+too many length or distance symbols
+oversubscribed dynamic bit lengths tree
+incomplete dynamic bit lengths tree
+invalid bit length repeat
+oversubscribed literal/length tree
+incomplete literal/length tree
+invalid distance code
+invalid literal/length code
+incorrect data check
+0.95P
+stream end
+bootargs
+## Loading Ramdisk Image at %08lx ...
+No Linux ARM Ramdisk Image
+   Loading Ramdisk to %08lx, end %08lx ... 
+ethaddr=
+eth2addr
+ eth2addr=
+board_rev
+ board_rev=
+reef_stop
+ reef_stop=
+boot_count
+ boot_count=
+jbus_logcfg
+ jbus_logcfg=
+watchdog
+ watchdog=
+showEvents
+ showEvents=
+ Giga94=false
+ Giga94=true
+ ethloopbacktest=1
+ ethloopbacktest=0
+ system_locked=false
+ factory_reset=true
+ deviceid=
+ booted_from=
+commandline arguments position = %08x
+commandline = '%s'
+Starting kernel ...
+%02x
+*** ERROR: `serverip' not set
+*** ERROR: `ipaddr' not set
+%d.%d.%d.%d
+bad length %d < %d
+ARP reply: 
+invalid RARP header
+len bad %d < %d
+version bad %x
+can't deal with fragments
+checksum bad
+ ICMP Host Redirect to 
+....... IP(%x) NM(%x) SV(%x) GW(%x)
+Abort
+Bytes transferred = %ld (%lx hex)
+DHCPRELEASE
+UNKNOWN/INVALID MSG TYPE
+DHCPDISCOVER
+DHCPOFFER
+DHCPREQUEST
+DHCPDECLINE
+DHCPACK
+DHCPNACK
+*** WARNING: %s is too long (%d - max: %d) - truncated
+BOOTP broadcast %d
+Host Name
+Root Path
+*** Unhandled DHCP Option in OFFER/ACK: %d
+DHCP client bound to address 
+DHCP: INVALID STATE
+RARP broadcast %d
+ARP broadcast %d for IP: 
+ Size is %d%s kB => %x Bytes
+Load address: 0x%lx
+Loading: *
+octet
+File too large
+File has bad magic
+%02lX%02lX%02lX%02lX.img
+*** Warning: no boot file name; using '%s'
+TFTP from server 
+; our IP address is 
+; sending throught gateway 
+Filename '%s'.
+Retry count exceeded; starting again
+TFTP error: First block is not block 1 (%d)
+Starting again
+done
+TFTP error: '%s' (%d)
+Starting again
+Factory device ID=
+%02X:%02X:%02X:%02X:%02X:%02X
+Factory MAC=%s
+Copying factory MAC to environment...
+Saving Environment to Flash...
+Man: %4x, Dev: %4x
+ST: 
+SPANSION: 
+WINBOND: 
+SST: 
+MXIC: 
+Unknown Vendor 
+M25P16 (16-megabit)
+M25P32 (32-megabit)
+S25FL064A (64-megabit)
+W25X16 (16-megabit)
+W25X32 (32-megabit)
+W25X64 (64-megabit)
+W25Q16 (16-megabit)
+W25Q32 (32-megabit)
+W25Q64 (64-megabit)
+25VF32 (32-megabit)
+MX25L6405D (64-megabit)
+Unknown Chip Type
+  Size: %ld MB in %ld Sectors
+  Sector Start Addresses:
+ (RO) 
+ (RW) 
+ %08lX%s
+unaligned destination not supported
+unaligned source not supported
+Erasing sector from 0x%04X to 0x%04X: 
+(%04X protected!)
+ ok.
+User Interrupt!
+MX25L1605D (16-megabit)
+MX25L3205D (32-megabit)
+Unknown: detected manID=%x, devID=%x,......... 
+Eth Rx Error
+EMAC452: packet too big
+losing packets in rx
+transmission error (timoeut)
+ETH LOOPBACK:PASS
+ETH LOOPBACK:FAIL COMP
+timeout during rx
+ETH LOOPBACK:FAIL TIME
+register 0x1F=[%x] cnt=%d tmp1=[%d] 
+Eth speed: Still auto negotiating 
+Eth speed: 10Mbps half duplex 
+Eth speed: 100Mbps half duplex 
+Eth speed: Unknown. Reverting to 100Mbps full duplex  
+Eth speed: 10Mbps full duplex 
+Eth speed: 100Mbps full duplex 
+Resetting CPU ...
+Reset Failed %d.....
+        
+bootargs=noinitrd root=/dev/ram0 rw init=/linuxrc earlyprintk=serial console=ttyS0
+bootcmd=bootm E8000
+bootdelay=1
+baudrate=115200
+ethaddr=02:4e:ef:09:19:20
+ipaddr=192.168.1.10
+serverip=192.168.1.34
+netmask=255.255.255.0
+bootfile="vmlinuz"
+boot_from=flash
+board_rev=RevB
+1st_boot_pos=E8000
+2nd_boot_pos=46F000
+rec_boot_pos=20000
+boot_from_image_no=1
+(((((
+AAAAAA
+BBBBBB
+vmlinux.bin
+
+
+valid_fs
+-cert
+Msensors
+nvs.bin
+%yhx^
+Znvs.bin.tmp
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+0200
+L:37
+0827(
+@X!n
+Sj.0|
+tJ202p0
+4(00d`
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+0200
+L:37
+0827(
+@X!n
+Sj.0|
+FC`p
+FC`4
+FC`4
+nvs.bin
+`k$Ln
+Znvs.bin.tmp
+Znvs.bin.tmp
+0200
+L:37
+0827(
+ZAX!n
+Sj.0|
+FC`4
+GC`4
+FC`D
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+0200
+L:37
+0827(
+ZAX!n
+Sj.0|
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+T'1200
+L:37
+0827(
+nvs.bin
+)KiD
+Bt1$9i
+MkgE}
+u/T(J
+CriJ
+|(F,
+j/@o
+<>mW
+cr{*
+mls"
+ate/image'
+Removing '/tmp/bas-001.000.043_update/checksum'
+Changing boot partition to 2
+Rebooting
+Basestation firmware update procedure executed correctly!
+
+
+00 ETA
+0 0 13
+Y>7<TA
+Checksum for downloaded image: f2873e158c40badedc6215ff0f51e2560c47973de43b08f923e8b80a6544747c
+Burning image from '/tmp/bas-001.000.043_update/image' to the '/dev/mtdblock7'
+,8+0
+l8+0 records in
+]Dvin
+78+0
+ records out
+1138688
+x^?$2
+ bytes (
+P1.1M
+~B9?
+B) copied, 
+d, 1
+5.92102
+1020
+ seconds, 
+, 69.8K
+.8KB/s
+Calculating checksum for partition '/dev/mtdblock7'
+Checksum for partition: f2873e158c40badedc6215ff0f51e2560c47973de43b08f923e8b80a6544747c
+Expected checksum:      f2873e158c40badedc6215ff0f51e2560c47973de43b08f923e8b80a6544747c
+Partition '/dev/mtdblock7' was flashed correctly
+# Automatically generated during build (Fri Jan 29 08:35:50 CET 2016)
+BAS_TAG_NEW="bas-001.000.043"
+update_lib.sh
+uGdI
+`6(W
+!]v[
+
+update_download.log
+	Searching for old basestation firmwares
+Creating '/tmp/bas-001.000.043_update' directory
+Downloading checksum from https://supplies.gigaset-elements.de/firmware/bas-001.000.043/up_vmlinuz.bin.sum
+
+Connecting to 
+supplies.gigaset-elements.de
+} (78.137.103.175:80
+:80)
+
+event.2
+ievent.3
+event.4
+event.5
+event.6
+nevent.7
+event.8
+event.9
+_event.10
+ebasestation
+bas-001.000.043
+update.sh
+
+Nupdate_version.txt
+  "027c06cbe0":"ps02"
+event.2
+
+
+I}oRI}oRI}oR
+[ distinguished_name ]
+I}oRI}oRI}oR
+C     = DE
+I}oRI}oRI}oR 
+ST    = North Rhine-Westphalia
+I}oRI}oRI}oR@
+L     = Dusseldorf
+I}oRI}oRI}oRT
+psO     = Gigaset Communications GmbH
+I}oRI}oRI}oRx
+|CN    = DE59BA6DA4094123A16C9D4730D4F28A
+{}oR{}oR{}oR
+{}oR
+cert.key
+{}oR{}oR{}oR
+
+|a3159fab9058989ed83d0b106b32872e  cloud
+
+heartbeat
+}}oR}}oR}}oR
+"interval" : 60,
+"retry" : 20,
+}}oR}}oR}}oR
+}}oR
+heartbeat.md5
+~}oR~}oR~}oR
+63]Mrb5595dbd68db4015d85bfa668259c320  heartbeat
+~}oR~}oR~}oR
+=2)Q
+~}oR
+settings
+~}oR~}oR~}oR
+OONKWR
+HM,*IJM,A
+3273
+~}oR~}oR~}oR
+/)\u
+~}oR
+settings.md5
+~}oR~}oR~}oR
+17aab0f794b0aa6f8b94911f0fdcd226  settings
+B{ZS
+:1MX
+cache
+endnodes
+Znvs.bin.tmp
+
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+
+nvs.bin
+Znvs.bin.tmp
+Znvs.bin.tmp
+
+openssl.cnf
+vmlinux.bin
+
+-cert
+Msensors
+post_update.log
+Starting post update procedure @ 
+ Thu Jan  1 00:00:07 UTC 1970
+Creating temporary directory '/tmp/old' ... 
+`. Done
+=zt#
+Trying to mount previous filesystem from '/dev/mtdblock5' in '/tmp/old' ... 
+.. Done
+Copying DECT configuration file ... 
++fXD
+nvs.bin
+
+
+  "027c06cbe0":"ps02",
+  "027c06cbe1":"ds02"
+
+event.2
+\027c06cbe1
+sleep
+
+fis01-2.lua
+
+sleep
+  "homecoming.presence.timestamp":"1459520005"
+sleep
+  "homecoming.presence.timestamp":"1459520067"
+sleep
+  "homecoming.presence.timestamp":"1459520156"
+  "homecoming.presence.timestamp":"1459520274"
+YBsleep
+	#s+R)
+  "homecoming.presence.timestamp":"1459520326"
+=sleep
+sleep
+
+
+[ distinguished_name ]
+verreq
+
+rsleep
+  "homecoming.presence.timestamp":"1459516899"
++Aesleep
+
+
+^[ distinguished_name ]
+_9W5
+C     = DE
+ST    = North Rhine-Westphalia
+L     = Dusseldorf
+O     = Gigaset Communications GmbH
+!CN    = DE59BA6DA4094123A16C9D4730D4F28A
+
+  "027c06cbe0":"ps02"
+fw=app-ps02-v0037.fws
+
+Mext-ps02-v0100b20.bin
+stack-ps02-v1025.fws
+2]`napp-ps02-v0037.fws
+  "027c06cbe0":"ps02"
+
+  "timezone":"CET-1CEST-2,M3.5.0\/02:00:00,M10.5.0\/03:00:00"
+\XB\
+\XB\
+\XB\
+Mext-ps02-v0100b20.bin
+
+
+O     = Gigaset Communications GmbH
+CN    = DE59BA6DA4094123A16C9D4730D4F28A
+
+
+cache
+uleapp.err.log
+2016-01-29T08:33:04 
+ERROR: nvsfix: 0xff found at 0x130, 1 bytes, new 00
+22016-01-29T08:33:04 
+ERROR: nvsfix: 0xff found at 0x039, 1 bytes, new 01
+2016-01-29T08:33:04 
+ERROR: nvsfix: 0xff found at 0x068, 1 bytes, new 00
+g2016-01-29T08:33:04 
+ERROR: nvsfix: 0xff found at 0x066, 1 bytes, new 00
+
+cloud.md5
+a3159fab9058989ed83d0b106b32872e  cloud
+
+settings
+OONKWR
+HM,*IJM,A
+3273
+heartbeat
+"interval" : 60,
+"retry" : 20,
+/)\u
+settings.md5
+17aab0f794b0aa6f8b94911f0fdcd226  settings
+heartbeat.md5
+b5595dbd68db4015d85bfa668259c320  heartbeat
+. Done
+json_object_from_file: error reading file 
+- /tmp/old/cfg/firmware_cfg
+fg: 
+No such file or directory
+Firmware config file error
+Unmounting filesystem '/dev/mtdblock5' ... 
+]Done
+Removing directory '/tmp/old' ... 
+.. Done
+Removing post update script '/mnt/data/post_update.sh' ... 
+Ipost_update.sh
+.. Done
+Post update procedure finished!
+dnvs.bin.bak
+
+eER;
+configuration
+  "timezone":"CET-1CEST,M3.5.0,M10.5.0\/3"
+[ distinguished_name ]
+C     = DE
+ST    = North Rhine-Westphalia
+L     = Dusseldorf
+eER;
+Done
+Copying uptime file ... 
+uptime
+u0 0 13
+ Done
+Copying basestation certificates ... 
+openssl.cnf
+$C!(#3/U7<
+ #1'3
+85'%
+cert.crt
+
+m.. Done
+Copying basestation configuration ...
+
+
+571d067dacb231a8017f94fa9e8550b15c8c7e58de10e45d60ae0bfd8b90e23d  /tmp/nvs.bin
+2%QB
+GuEsex
+                 
+bootargs=noinitrd root=/dev/ram0 rw init=/linuxrc earlyprintk=serial console=ttyS0
+bootcmd=bootm E8000
+bootdelay=1
+baudrate=115200
+ipaddr=192.168.1.10
+serverip=192.168.1.34
+netmask=255.255.255.0
+bootfile="vmlinuz"
+boot_from=flash
+board_rev=RevB
+1st_boot_pos=E8000
+2nd_boot_pos=46F000
+rec_boot_pos=20000
+ethaddr=7C:2F:80:81:E0:61
+boot_from_image_no=2

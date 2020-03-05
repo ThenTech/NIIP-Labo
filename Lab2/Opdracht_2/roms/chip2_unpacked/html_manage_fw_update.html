@@ -1,0 +1,57 @@
+<html>
+
+<head>
+    <meta http-equiv="Cache-Control" CONTENT="no-cache">
+    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=iso-8859-1">
+    <title>Management Mode Firmware Update</title>
+    <SCRIPT language=javascript>
+        function cancel_upgrade() {
+            if (confirm("Are you sure to canel Safe upgrade?") == false) {
+                return false;
+            } else {
+                window.open("/cancel.asp", "_self");
+                return true;
+            }
+        }
+    </SCRIPT>
+</head>
+
+<body MARGIN="0" LEFTMARGIN="0" TOPMARGIN="0">
+    <br>
+    <br>
+    <center>
+        <font size=6 style="font-family:Arial">
+                                <b>Management Mode <br>Firmware Upgrade</b>
+                                </font>
+        <br>
+        <br>
+        <br>
+        <FORM name=firmware action=upgrade.cgi method=post encType=multipart/form-data>
+            <INPUT type=hidden name="Status" value="0">
+            <table border=0 CELLPADDING=0 CELLSPACING=2>
+                <tr>
+                    <td>
+                        <font size=4 style="font-family:Arial">
+                                                                    <b>File Name:</b>
+                                                                </font>
+                    </td>
+                    <td>
+                        <input type=file name="file">
+                    </td>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colspan=2 align="center">
+                        <input type="submit" name="submit" value="Apply">&nbsp;&nbsp;
+                        <input onclick=cancel_upgrade() type=button value="Cancel">
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <br>
+    </center>
+</body>
+
+</html>

@@ -1,0 +1,266 @@
+Starting...
+Welcome to PyCom Slots!
+Available commands: [b'spin', b'quit']
+Enter command:
+Sending spin to pull lever.
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (49 credits left)
+Result: LEMON    BELL   ORANGE
+Enter command:
+spin
+Putting in 1 credit and pulling lever...  (48 credits left)
+Result: ORANGE  CHERRY  CHERRY
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (47 credits left)
+Result:  PLUM   CHERRY   BELL
+Enter command:
+Sending spin to pull lever.
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (46 credits left)
+Result:  PLUM    BAR    ORANGE
+Enter command:
+spin
+Putting in 1 credit and pulling lever...  (45 credits left)
+Result: LEMON    BELL    PLUM
+Enter command:
+Sending spin to pull lever.
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (44 credits left)
+Result:  BAR    ORANGE  LEMON
+Enter command:
+spin
+Putting in 1 credit and pulling lever...  (43 credits left)
+Result:  BELL    PLUM    BAR
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (42 credits left)
+Result: ORANGE   PLUM   ORANGE
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (41 credits left)
+Result: LEMON    BELL   CHERRY
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (40 credits left)
+Result: CHERRY  SEVEN    PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (39 credits left)
+Result:  BELL   ORANGE  LEMON
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (38 credits left)
+Result: ORANGE   PLUM   SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (37 credits left)
+Result:  PLUM    BELL    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (36 credits left)
+Result: ORANGE  LEMON   ORANGE
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (35 credits left)
+Result: CHERRY  LEMON    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (34 credits left)
+Result: ORANGE  LEMON    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (33 credits left)
+Result:  PLUM    BELL   SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (32 credits left)
+Result:  PLUM   LEMON   SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (31 credits left)
+Result:  PLUM    BAR    SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (30 credits left)
+Result: LEMON    PLUM   SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (29 credits left)
+Result: CHERRY  CHERRY  SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (28 credits left)
+Result: ORANGE  LEMON    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (27 credits left)
+Result: CHERRY  CHERRY  CHERRY
+Congratulations! You won 1 credits!
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (27 credits left)
+Result:  BAR    SEVEN    PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (26 credits left)
+Result: SEVEN    PLUM    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (25 credits left)
+Result:  BELL   SEVEN    PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (24 credits left)
+Result:  BAR    SEVEN   LEMON
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (23 credits left)
+Result: SEVEN    BELL   SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (22 credits left)
+Result:  PLUM    BAR     BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (21 credits left)
+Result:  BELL   SEVEN    PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (20 credits left)
+Result:  BELL   ORANGE  LEMON
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (19 credits left)
+Result:  BELL   CHERRY  SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (18 credits left)
+Result:  PLUM    BELL   ORANGE
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (17 credits left)
+Result: CHERRY  CHERRY  CHERRY
+Congratulations! You won 1 credits!
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (17 credits left)
+Result:  BAR    LEMON    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (16 credits left)
+Result: ORANGE  LEMON    BELL
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (15 credits left)
+Result: CHERRY  CHERRY  SEVEN
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (14 credits left)
+Result: ORANGE  ORANGE   BAR
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (13 credits left)
+Result: SEVEN    PLUM    BAR
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (12 credits left)
+Result: SEVEN    PLUM    PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (11 credits left)
+Result:  BAR    SEVEN   LEMON
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (10 credits left)
+Result:  PLUM   ORANGE   BAR
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (9 credits left)
+Result: SEVEN    PLUM    PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (8 credits left)
+Result: CHERRY  CHERRY   PLUM
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (7 credits left)
+Result:  BAR    SEVEN   LEMON
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (6 credits left)
+Result:  PLUM   SEVEN   CHERRY
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (5 credits left)
+Result: CHERRY  SEVEN   ORANGE
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (4 credits left)
+Result: LEMON    BELL   CHERRY
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (3 credits left)
+Result: SEVEN    BELL   ORANGE
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (2 credits left)
+Result: CHERRY  ORANGE  ORANGE
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (1 credits left)
+Result:  BAR    CHERRY  LEMON
+Enter command:
+Sending spin to pull lever.
+spin
+Putting in 1 credit and pulling lever...  (0 credits left)
+Result:  BAR    SEVEN   ORANGE
+Out of credits! See you next time, addict!

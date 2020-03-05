@@ -1,0 +1,1966 @@
+1EFC1EFC
+FLSH
+Xboot_hw_model=E2500
+boot_hw_ver=1.0
+boardtype=0xF550
+boardnum=42
+boardrev=0x1101
+boardflags=0x00000710
+boardflags2=0x00008000
+sromrev=8
+boardpwrctl=0xD00
+clkfreq=300,150,75
+xtalfreq=20000
+sdram_config=0x0103
+sdram_ncdl=0x5800001a
+sdram_refresh=0x1a5b
+sdram_phyctl=0x00000001
+et0phyaddr=30
+et0mdcport=0
+et0macaddr=00:01:36:1F:E4:59
+vlan1ports=0 1 2 3 5*
+vlan1hwname=et0
+vlan2ports=4 5
+vlan2hwname=et0
+landevs=vlan1 wl0 wl1
+wandevs=vlan2
+lan_ipaddr=192.168.1.1
+lan_netmask=255.255.255.0
+gpio9=wps_button
+sb/1/boardflags=0x00000710
+sb/1/boardflags2=0x00008000
+sb/1/sromrev=8
+sb/1/devid=0x4347
+sb/1/macaddr=00:01:36:1F:E4:5B
+sb/1/aa2g=3
+sb/1/ag0=0
+sb/1/ag1=0
+sb/1/txchain=3
+sb/1/rxchain=3
+sb/1/antswitch=0
+sb/1/tssipos2g=1
+sb/1/extpagain2g=2
+sb/1/pdetrange2g=2
+sb/1/triso2g=3
+sb/1/antswctl2g=1
+sb/1/maxp2ga0=0x48
+sb/1/pa2gw0a0=0xFF01
+sb/1/pa2gw1a0=0x12E3
+sb/1/pa2gw2a0=0xFAFF
+sb/1/maxp2ga1=0x48
+sb/1/pa2gw0a1=0xFF85
+sb/1/pa2gw1a1=0x149F
+sb/1/pa2gw2a1=0xFB2D
+sb/1/cck2gpo=0x0000
+sb/1/ofdm2gpo=0x44444444
+sb/1/mcs2gpo0=0x3333
+sb/1/mcs2gpo1=0x6666
+sb/1/mcs2gpo2=0x3333
+sb/1/mcs2gpo3=0x6666
+sb/1/mcs2gpo4=0x6666
+sb/1/mcs2gpo5=0x6666
+sb/1/mcs2gpo6=0x6666
+sb/1/mcs2gpo7=0x6666
+sb/1/cddpo=0x0000
+sb/1/stbcpo=0x0000
+sb/1/bw40po=0x0000
+sb/1/bwduppo=0
+sb/1/ccode=0
+sb/1/regrev=0
+sb/1/ledbh0=11
+sb/1/ledbh1=11
+sb/1/ledbh2=11
+sb/1/ledbh3=11
+sb/1/leddc=0xFFFF
+sb/1/temps_period=5
+sb/1/tempthresh=120
+sb/1/temps_hysteresis=5
+sb/1/phycal_tempdelta=0
+sb/1/tempoffset=0
+boot_wait=on
+wait_time=3
+reset_gpio=10
+gpio23=wombo_reset
+blink_diag_led=1
+dl_ram_addr=a0001000
+os_ram_addr=80001000
+os_flash_addr=bfc40000
+scratch=a0180000
+watchdog=5000
+devpath0=usb/0xbd17
+0:venid=0x14E4
+0:boardtype=0x0521
+0:boardrev=0x1300
+0:sromrev=8
+0:boardflags=0x00000400
+0:boardflags2=0x00000000
+0:devid=0x4348
+0:macaddr=00:01:36:1F:E4:5C
+0:aa5g=3
+0:ag0=0
+0:ag1=0
+0:txchain=3
+0:rxchain=3
+0:antswitch=0
+0:tssipos5g=1
+0:extpagain5g=2
+0:pdetrange5g=2
+0:triso5g=3
+0:antswctl5g=0
+0:maxp5gla0=0x3C
+0:pa5glw0a0=0xFE64
+0:pa5glw1a0=0x13F7
+0:pa5glw2a0=0xFAF6
+0:maxp5ga0=0x38
+0:pa5gw0a0=0xFE99
+0:pa5gw1a0=0x156C
+0:pa5gw2a0=0xFAA7
+0:maxp5gha0=0x42
+0:pa5ghw0a0=0xFE85
+0:pa5ghw1a0=0x155E
+0:pa5ghw2a0=0xFAA4
+0:maxp5gla1=0x3C
+0:pa5glw0a1=0xFE87
+0:pa5glw1a1=0x14BE
+0:pa5glw2a1=0xFAD6
+0:maxp5ga1=0x38
+0:pa5gw0a1=0xFEA6
+0:pa5gw1a1=0x1745
+0:pa5gw2a1=0xFA45
+0:maxp5gha1=0x42
+0:pa5ghw0a1=0xFE8D
+0:pa5ghw1a1=0x162E
+0:pa5ghw2a1=0xFA78
+0:ofdm5glpo=0x00000000
+0:ofdm5gpo=0x00000000
+0:ofdm5ghpo=0x33330000
+0:mcs5glpo0=0x0000
+0:mcs5glpo1=0x0000
+0:mcs5glpo2=0x0000
+0:mcs5glpo3=0x0000
+0:mcs5glpo4=0x0000
+0:mcs5glpo5=0x0000
+0:mcs5glpo6=0x0000
+0:mcs5glpo7=0x0000
+0:mcs5gpo0=0x5555
+0:mcs5gpo1=0x5555
+0:mcs5gpo2=0x5555
+0:mcs5gpo3=0x5555
+0:mcs5gpo4=0x8888
+0:mcs5gpo5=0x8888
+0:mcs5gpo6=0x8888
+0:mcs5gpo7=0x8888
+0:mcs5ghpo0=0x3333
+0:mcs5ghpo1=0x8888
+0:mcs5ghpo2=0x3333
+0:mcs5ghpo3=0x8888
+0:mcs5ghpo4=0x3333
+0:mcs5ghpo5=0x8888
+0:mcs5ghpo6=0x3333
+0:mcs5ghpo7=0x8888
+0:cddpo=0x0000
+0:stbcpo=0x0000
+0:bw40po=0x0000
+0:bwduppo=0
+0:ccode=0
+0:regrev=0
+0:ledbh0=11
+0:ledbh1=11
+0:ledbh2=11
+0:ledbh3=11
+0:leddc=0xFFFF
+0:temps_period=5
+0:tempthresh=120
+0:temps_hysteresis=5
+0:phycal_tempdelta=0
+0:tempoffset=0
+0:subvendid=0x0a5c
+0:subdevid=0xbdc
+mfg_wait=on
+tftpd_ipaddr=192.168.1.254
+tftp_rrq_timeout=3
+tftp_max_retries=5
+tftp_recv_timeout=3
+clkdivsf=2
+cfe_ping_timeout=2
+v4.13
+
+
+
+boardpwrctl
+uart0
+sdram_init
+clkfreq
+sdram_disdll
+sdram_phyctl
+This is a Serial Flash
+Boot partition size = %d(0x%x)
+boot
+nvram
+This is a Parallel Flash
+sdram_ncdl
+boot_ver
+Boot version: %s
+v4.13
+pmon_ver
+CFE %s
+5.60.127.2901 @VERSION_TYPE@
+clkdivsf
+### CLKDIV= 0x%x, SFlashClkDiv=%d clkdivsf=%d ###
+wait_time
+eth0
+192.168.1.1
+255.255.255.0
+ifconfig eth0 -addr=%s -mask=%s
+boot_config
+STARTUP
+boot_config too long, skipping to autoboot
+### Change it to 0x%x (%d) ###
+Committing NVRAM...
+done
+Waiting for reset button release...
+ ==> %s
+0x%x
+	Illegal mac, skip it!
+No mac find, use default mac
+PMON
+The boot is CFE
+The boot is PMON
+et0macaddr
+Update lan mac from [%s] to [%s]
+Nothing...
+country
+	Illegal country, skip it!
+No country code find
+wl_country_code
+Update country from [%s] to [%s]
+wl0_country_code
+wl1_country_code
+wl_country
+wl0_country
+wl1_country
+sb/1/ag0
+0x82
+sb/1/ag1
+0x83
+0:ag0
+0x05
+0:ag1
+0x84
+The country is same
+unset
+commit
+erase
+flash0.nvram
+show
+getall
+size: %d bytes (%d left)
+flash0.trx
+flash0.os
+  Header CRC:    0x%X
+  Calculate CRC: 0x%X
+tftpd_ipaddr
+You must set a tftp server IP Address to tftpd_ipaddr firstly.
+load -raw -addr=0x%x -max=0x%x %s:mfgtest_e2500.bin
+os_ram_addr
+80001000
+0x%s
+boot -raw -z -addr=0x%s -max=0x%x -fs=memory :0x%x
+Try %d ...
+load -raw -addr=0x%x -max=0x%x :
+00:01:36:1f:e4:59xxx
+00:01:36:1F:E4:59
+et0macaddr
+manual_nv
+mfg_wait
+restore_defaults
+Please use tftp to upload an image for upgrade...
+safe_mode_upgrade
+AP code error!
+cfe_https_result
+flash -ctheader -https : flash1.trx
+boot -raw -z -addr=0x%s -max=0x%x flash0.os:
+reboot
+boot_wait
+flash -ctheader -mem -size=0x%x 0x%x flash1.trx
+Try to load image 1.
+Image 1 is OK
+Reboot.
+reboot
+Reboots.
+nvram [command] [args..]
+Access NVRAM.
+nvram
+NVRAM utility.
+get [name];Gets the value of the specified variable|set [name=value];Sets the value of the specified variable|unset [name];Deletes the specified variable|commit;Commit variables to flash|erase;Erase all nvram|show;Shows all variables|
+Verify and boot OS image.
+Boots OS image if valid. Waits for a new OS image if image is invalid
+or boot_wait is unset or not on.
+prodid
+boardtype
+boardflags
+boardflags2
+leddc
+xtalfreq
+devid
+wl0id
+sb/%u/
+rmin
+rmax
+r%dd
+r%dt
+%d.%d.%d.%d
+gpioXXXX
+gpio%d
+Undefined error
+Bad Argument
+Bad Option
+Not up
+Not down
+Not AP
+Not STA
+Bad Key Index
+Radio Off
+Not band locked
+No clock
+Bad Rate valueset
+Bad Band
+Buffer too short
+Buffer too long
+Busy
+Not Associated
+Bad SSID len
+Out of Range Channel
+Bad Channel
+Bad Address
+Not Enough Resources
+Unsupported
+Bad length
+Not Ready
+Not Permitted
+No Memory
+Associated
+Not In Range
+Not Found
+WME Not Enabled
+TSPEC Not Found
+ACM Not Supported
+Not WME Association
+SDIO Bus Error
+Dongle Not Accessible
+Incorrect version
+TX Failure
+RX Failure
+Device Not Present
+NMODE Disabled
+Undefined error %d
+NONE
+WEP1
+TKIP
+WEP128
+AES_CCM
+AES_OCB_MSDU
+AES_OCB_MPDU
+NALGUNDEF
+UNDEF
+%d.%d
+%c%03x
+%s: %d 
+%02x 
+reset_gpio
+find_nvram: no nvram found
+_nvram_realloc: our of memory
+flash0.nvram
+nvram_commit: out of memory
+(null)
+Unknown type %d
+%s %s size %uKB
+%s %s offset %08X size %uKB
+Atmel
+sflash: found no supported devices
+Serial flash
+flash
+Using only 4MB in BCM4716a0
+Found a %dMB %s serial flash
+Atmel
+ST compatible
+5.60.127.2901 @VERSION_TYPE@
+et%d: %s %s
+Broadcom Ethernet
+eth0
+robowr
+phywr
+down
+loop
+dump
+msglevel
+promisc
+et command [args..]
+Configures the specified Broadcom Ethernet interface.
+Broadcom Ethernet utility.
+-i=*;Specifies the interface|up;Activate the specified interface|down;Deactivate the specified interface|loop;Sets the loopback mode (0,1)|dump;Dump driver information|msglevel;Sets the driver message level|promisc;Sets promiscuous mode|
+PANIC: out of memory!
+(null)
+New CFI flash
+flash
+%s at %08X size %uKB
+%s at %08X offset %08X size %uKB
+ (%d chips)
+NS16550 UART
+uart
+%s at 0x%X
+%s%d
+BOOT_CONSOLE
+BCM947XX
+%d.%d.%d
+CFE_VERSION
+CFE_BOARDNAME
+CFE_MEMORYSIZE
+CFE version %d.%d.%d for %s (%s)
+32bit,SP,LE
+Build Date: %s (%s)
+Copyright (C) 2000-2008 Broadcom Corporation.
+RUN!
+CPU type 0x%X: 
+%dKHz
+Tot mem: %u KBytes
+CFE mem:    0x%08X - 0x%08X (%d)
+Data:       0x%08X - 0x%08X (%d)
+BSS:        0x%08X - 0x%08X (%d)
+Heap:       0x%08X - 0x%08X (%d)
+Stack:      0x%08X - 0x%08X (%d)
+Text:       0x%08X - 0x%08X (%d)
+%dMHz
+STARTUP
+Startup canceled
+KMEM
+CONS
+CIOK
+AREN
+Init Arena
+DEVI
+Init Devs.
+ENVI
+*exit status = %d
+CFE 
+PROMPT
+CFE> 
+*** command status = %d
+No error
+Error
+Invalid command
+End of file reached
+I/O error
+Insufficient memory
+Device not found
+Device is open
+Invalid parameter
+Environment variable not found
+Environment variable is read-only
+Not an ELF-format executable
+Not a 32-bit executable
+Executable is wrong-endian
+Invalid ELF file version
+Not a MIPS ELF file
+Invalid ELF file
+Section would load outside available DRAM
+File not found
+Unsupported function
+Host name unknown
+Timeout occured
+Network protocol error
+Network is down
+No name server configured
+No more handles
+Already bound
+Cannot set network parameter
+No more enumerated items
+File system not recognized
+File system not available
+Invalid boot block on disk
+Device type is incorrect for boot method
+Boot block checksum is invalid
+Boot program checksum is invalid
+Loader is not available
+Device is not ready
+Cannot get memory at specified address
+Cannot set memory at specified address
+Socket is not connected
+Address is in use
+Interrupted
+Unknown error
+05/30/11 16:28:42 CST
+root@GavinPC.localdomain
+raw_fileop_uninit: warning: refcnt not zero
+1.1.3
+zlibfs_fileop_uninit: warning: refcnt not zero
+power_pulse_time
+power_blink_time
+cfe_led_switch_fail
+%s: loading firmware fail in boot, then blink power led.
+memory
+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_?
+'"&|;
+     
+%-12s (no information)
+%-12s %s
+Available commands: 
+Available "
+%s%s
+" commands: 
+  SUMMARY
+  USAGE
+  OPTIONS
+No help available for '%s'.
+Type 'help' for a list of commands.
+Available commands:
+For more information about a command, enter 'help command-name'
+help [command]
+help
+Obtain help for CFE commands
+Incomplete command: "%s"
+Invalid command: "%s"
+: %s
+Invalid switch: %s
+Device Name          Description
+-------------------  ---------------------------------------------------------
+%19s  %s
+show devices
+This command displays the names and descriptions of the devices
+CFE is configured to support.
+show devices
+Display information about the installed devices.
+internal
+external
+auto
+10hdx
+10fdx
+100hdx
+100fdx
+1000hdx
+1000fdx
+ifconfig device [options..]
+ifconfig
+Configure the Ethernet interface
+-auto;|-off;|-addr=*;|-mask=*;|-gw=*;|-dns=*;|-domain=*;|-speed=*;|-loopback=*;|-hwaddr=*;
+Usage:
+upgrade code.bin
+upgrade boot.bin
+upgrade mfg.bin client
+upgrade mfg.bin (same as "upgrade mfg.bin server")
+upgrade
+Upgrade Firmware.
+Device %s has been deactivated.
+Network interface has not been configured
+Device %s: 
+ hwaddr %a
+, ipaddr not set
+, mask not set
+        
+gateway not set
+, nameserver not set
+, domain %s
+, nameserver %I
+gateway %I
+, mask %I
+, ipaddr %I
+(none)
+Invalid %s: %s
+Invalid parameter for %s: Valid options are: 
+-off
+-auto
+-addr
+interface IP address
+-mask
+netmask
+gateway IP address
+-dns
+name server IP address
+-domain
+-speed
+-loopback
+-hwaddr
+Could not activate network interface '%s'
+Invalid hardware address: %s
+code.bin
+boot.bin
+flash -ctheader : flash1.boot
+Try %d ...
+Upgrade successfully ...
+mfgtest_wrt610nv2.bin
+boot_hw_ver
+mfgtest_wrt610n.bin
+client
+load [-options] host:filename|dev:filename
+load
+Load an executable file into memory without executing it
+-elf;|-raw;|-z;|-loader=*;|-tftp;|-rawfs;|-fs=*;|-max=*;|-addr=*;
+boot [-options] host:filename|dev:filename
+boot
+Load an executable file into memory and execute it
+-elf;|-raw;|-z;|-loader=*;|-tftp;|-rawfs;|-fs=*;|-max=*;|-addr=*;|-noclose;
+go [address]
+The 'go' command will start a program previously loaded with 
+the 'load' command.  You can override the start address byspecifying it as a parameter to the 'go' command.
+Start a previously loaded program.
+-noclose;Don't close network link before executing program
+-noclose
+Loader:%s Filesys:%s Dev:%s File:%s Options:%s
+Could not load %s: %s
+No program name specified
+flash [options] filename [flashdevice]
+flash
+Update a flash memory device
+-noerase;|-https;|-offset=*;|-size=*;|-ctheader;|-noheader;|-mem;
+CFE1
+Invalid header seal.  This is not a CFE flash image.
+Flash image contains CFE version %d.%d.%d for board '%s'
+Flash image is %d bytes, flags %08X, CRC %08X
+BCM947XX
+Flash image size is bogus!
+CRC is incorrect. Calculated CRC is %08X
+This flash image is not appropriate for board type '%s'
+-mem
+flash0.0
+Device '%s' is not a flash or eeprom device.
+-noheader
+-ctheader
+-noerase
+-offset
+-size
+Reading from %s: 
+flash1.boot
+Programming...
+Failed.
+cfe_https_result
+success
+done. %d bytes written
+Erasing flash...
+Failed to erase the flash
+Rewriting boot flash device '%s'
+**DO NOT TURN OFF YOUR MACHINE UNTIL IT REBOOTS!**
+Closing network.
+boot code size is greater then %d, fail to upgrade!
+Could not open device '%s'
+EST Pattern is correct!
+EST Pattern is incorrect!
+flash0
+rom bin upgrade, no pattern check!!!!!
+E25X
+CODE Pattern is correct! (%s)
+flash1.trx
+CODE Pattern is incorrect! (%s)
+Reading %s: 
+Done. %d bytes read
+fname=%s 
+Invalid file name %s
+srec
+(size=0x%X) 
+Could not read from flash
+Could not open source device
+Find minimum offset is 0x%X!
+Out of range! start_address == 0x%X, boot_size == 0x%X! Do nothing!
+Copy %d data from offset 0x%X!
+ERROR! data_len = %d
+NET_DEVICE
+NET_IPADDR
+NET_NETMASK
+NET_GATEWAY
+NET_NAMESERVER
+NET_DOMAIN
+tftp
+octet
+TFTP error %d: %s
+mfg_rrq_timeout
+mfg_max_retries
+%02d%02d
+%02d%02d%02d
+code pattern incorrect
+Cann't downgrade to this old firmware version (1)
+Cann't downgrade to this old firmware version (2)
+Cann't downgrade to this old firmware version (3)
+flash1.boot
+EST Pattern is CORRECT!
+EST Pattern is INCORRECT!
+flash0
+rom bin upgrade!check nothing!......
+memfs
+mfg bin upgrade!check nothing!......
+E25X
+boardflags
+CODE Pattern is CORRECT!
+v%d.%d.%d
+v0.00.0
+upgrade_ver[%s] upgrade_ver[%d] 4712_ver[%d]
+Cann't downgrade to this old firmware version (%s), must be above %s(included)
+boardtype
+0x0708
+0x042f
+Cann't downgrade to this old firmware version, the version don't support 4704 chipset
+0x0467
+Cann't downgrade to this old firmware version, the version don't support 5352E chipset
+Cann't downgrade to this old firmware version, the version don't support 5325E switch
+CODE Pattern is INCORRECT! (%s)
+TFTP write error %d: %s
+BOOT.BIN
+KEEPMAC_BOOT.BIN
+It is a special boot.bin file. Keep MAC settings!
+ROM.BIN
+MFG.BIN
+flash1.trx
+transfer cancelled
+Warning: negative seek on tftp file attempted
+State=%d SendNext=%u SendUnack=%u 
+SendWin=%d Ack=%u Rxlen=%d
+https
+(net_https) %s, %d
+quit
+Content-Length: 
+content length == %d, %02x %02x %02x %02x %02x %02x %02x %02x 
+222content length == %d, rxlen == %d, jj == %d
+Error : The image is too large, do not support for now!
+len == %d
+filename = %s
+filename=
+%02c, %02c, %02c, %02c, %02x, %02x, %02x, %02x
+Last : %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x
+HTTP/1.1 200 OK
+Server: HTTP Server V1.0
+Content-type: text/html
+Pragma: no-cache
+Connection: close
+%s%s
+kmalloc fail!
+code pattern : %c%c%c%c
+E25X
+firmware version : %d.%2d.%2d
+flash1.trx
+safe_mode_upgrade
+http_fileop_read = %d
+HTTP server listening...(type 'quit' to quit)
+cfe_https_result
+success
+GET /Upgrade.asp
+get upgrade.asp
+GET / 
+GET /index.asp
+GET /result.asp
+get result.asp
+POST /upgrade.cgi
+post upgrade.cgi
+receive data count == %d
+http finished its job, now it is flash driver's turn!bang, bang....
+GET /cancel.asp
+reboot
+GET /
+Develop.....  | http_fileop_write
+Develop.....  | http_fileop_seek
+Develop.....  | http_fileop_close
+Develop.....  | http_fileop_uninit
+incorrect header check
+invalid window size
+unknown compression method
+need dictionary
+incorrect data check
+invalid block type
+invalid stored block lengths
+invalid bit length repeat
+too many length or distance symbols
+incomplete dynamic bit lengths tree
+oversubscribed dynamic bit lengths tree
+incomplete literal/length tree
+oversubscribed literal/length tree
+empty distance tree with lengths
+incomplete distance tree
+oversubscribed distance tree
+invalid literal/length code
+invalid distance code
+invalid literal/length code
+invalid distance code
+ERROR. Flash device write error at address %x
+0 ATv0v1a0a1a2a3t0t1t2t3t4t5t6t7s0s1s2s3s4s5s6s7t8t9k0k1gpspfpra
+InterruptTLBMod   TLBMissRdTLBMissWrAddrErrRdAddrErrWrBusErrRd BusErrWr Syscall  Breakpt  InvOpcodeCoProcUnuArithOvflTrapExc  VCEI     FPUExc   CP2Exc   Exc17    Exc18    Exc19    Exc20    Exc21    Exc22    Watchpt  Exc24    Exc25    Exc26    Exc27    Exc28    Exc29    Exc30    VCED     
+EXC!
+**Exception %d: EPC=%08X, Cause=%08X (%9s)
+                RA=%08X, VAddr=%08X
+        %2s ($%2d) = %08X     %2s ($%2d) = %08X
+CFE 
+0xXXXXXXXX
+sdram_init
+sdram_config
+sdram_refresh
+sdram_ncdl
+0x%08X
+0x%04X
+%s=%s
+nvram_init: out of memory
+SPI (GPIO)
+MII (MDC/MDIO)
+lanports_enable
+robo_reset
+robo_ss
+robo_sck
+robo_mosi
+robo_miso
+switch_mode_manual
+switch_mode_auto
+et1mdcport
+et1phyaddr
+et_swleds
+vlanXXXXports
+XXXX
+vlan%dports
+boardflags
+et%dmacaddr
+et%dphyaddr
+et%d
+ephy_reset
+Broadcom BCM47XX 10/100/1000 Mbps Ethernet Controller
+et_swtype
+tx_broadcast_pkts %d tx_multicast_pkts %d tx_jabber_pkts %d tx_oversize_pkts %d
+tx_fragment_pkts %d tx_underruns %d
+tx_total_cols %d tx_single_cols %d tx_multiple_cols %d tx_excessive_cols %d
+tx_late_cols %d tx_defered %d tx_carrier_lost %d tx_pause_pkts %d
+rx_broadcast_pkts %d rx_multicast_pkts %d rx_jabber_pkts %d rx_oversize_pkts %d
+rx_fragment_pkts %d rx_missed_pkts %d rx_crc_align_errs %d rx_undersize %d
+rx_crc_errs %d rx_align_errs %d rx_symbol_errs %d
+rx_pause_pkts %d rx_nonpause_pkts %d
+&txavail
+BOOT_DEVICE
+BOOT_FILE
+BOOT_FLAGS
+No program has been loaded.
+Starting program at 0x%p
+Closing network.
+Entry at 0x%p
+Failed.
+Loading: 
+0x%x/%d 
+-fatfs
+-tftp
+tftp
+-rawfs
+srec
+-https
+https
+-elf
+-srec
+-raw
+-loader
+-max
+-addr
+-noclose
+ %d bytes read
+ N	,
+(((((
+AAAAAA
+BBBBBB
+%02x:%02x:%02x:%02x:%02x:%02x
+ n;^
+Qkkbal
+i]Wb
+9a&g
+MGiI
+wn>Jj
+#.zf
++o*7
+-0123456789ABCDEF
+0123456789abcdef
+0123456789ABCDEF
+0123456789abcdef
+http_fileop_init
+http_fileop_open
+handle_post_requst
+http_fileop_read
+G` (, L
+GP (, L
+GH (, M
+_L	 
+<html><head><meta http-equiv="Cache-Control" CONTENT="no-cache"><META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=iso-8859-1"><title>Management Mode Firmware Update</title><SCRIPT language=javascript>function cancel_upgrade(){	if(confirm("Are you sure to canel Safe upgrade?") == false)	{		return false;	}	else	{		window.open("/cancel.asp", "_self");		return true;	}}</SCRIPT></head><body MARGIN="0" LEFTMARGIN="0" TOPMARGIN="0"><br><br><center><font size=6 style="font-family:Arial"><b>Management Mode <br>Firmware Upgrade</b></font><br><br><br><FORM name=firmware action=upgrade.cgi method=post encType=multipart/form-data><INPUT type=hidden name="Status" value="0"><table  border=0 CELLPADDING=0 CELLSPACING=2 >     <tr>      <td><font size=4 style="font-family:Arial"><b>File Name:</b></font></td>      <td><input type=file name="file"></td>   </tr>      <tr><td>&nbsp;</td></tr>   <tr>      <td colspan=2 align="center"><input type="submit" name="submit" value="Apply">&nbsp;&nbsp;<input onclick=cancel_upgrade() type=button value="Cancel"></td>   </tr>   </table></form><br></center></body></html>
+<HTML><HEAD><TITLE>404 Not Found</TITLE></HEAD><BODY BGCOLOR="#cc9999"><H4>404 Not Found</H4>File not found.</BODY></HTML>
+<html><head><meta http-equiv="Cache-Control" CONTENT="no-cache"><META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=iso-8859-1"><title></title></head><body MARGIN="0" LEFTMARGIN="0" TOPMARGIN="0"><br><br><center><br><br><table  border=0 CELLPADDING=0 CELLSPACING=2 >     <tr>      <td><font size=6 style="font-family:Arial"><b>Upgrade Success</b></font></td>   </tr></table><br></center></body></html>
+<html><head><meta http-equiv="Cache-Control" CONTENT="no-cache"><META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=iso-8859-1"><title></title></head><body MARGIN="0" LEFTMARGIN="0" TOPMARGIN="0"><br><br><center><br><br><table  border=0 CELLPADDING=0 CELLSPACING=2 >     <tr>      <td><font size=6 style="font-family:Arial"><b>Upgrade Fail or Upgrade not Finished!</b></font></td>   </tr></table><br></center></body></html>
+<html><head><SCRIPT language=JavaScript>function returnpage(){        document.location.href =  "index.asp";}function init(){        if(wait_time != "0" && wait_time != "") {                DelayTime = wait_time * 1000 ;                setTimeout('returnpage()', DelayTime);                  }}</SCRIPT></head><body bgcolor="black" onload=init()><form name=success><center><table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=557 ><tr BGCOLOR="white"><th HEIGHT=400><font face="Verdana" size=4 color="red">Never interrupt, please wait...</font><script>var wait_time = 120;document.write("<p><font face=Verdana size=2 color=black>You will get the result page after 60 seconds.");</script></th></tr></table></center></body></form>
+<html><head><meta http-equiv="expires" content="0"><meta http-equiv="cache-control" content="no-cache"><meta http-equiv="pragma" content="no-cache"><SCRIPT language=JavaScript>var submit_button = 'index.asp';function to_submit(){	if(submit_button == "")		history.go(-1);	else if(submit_button == "WL_WEPTable.asp")		self.close();	else		document.location.href =  submit_button;	}</SCRIPT></head><body bgcolor="black"><form><center><table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=557 ><tr BGCOLOR="white"><th HEIGHT=400><font face="Verdana" size=4 color="red">Safe Mode upgrade cancel, rebooting...</font><p><p><input type=button name=action value=Continue onClick=to_submit()></th></tr></table></center></form></body></html>
+pa5ga0idxval=0 -359 4972 -1279
+pa5ga1idxval=2 -346 5317 -1355
+pa5gha0idxval=0 -379 5214 -1324
+pa5gha1idxval=2 -371 5294 -1345
+mac=58:6D:8F:7B:A5:F7
+sn=10A10C18182134
+wsc_pin=53211842
+country=EU
+2g_country_code=EU
+5g_country_code=EU
+HDR0
+piggy
+RFlC
+
+
+
+FLSH
+Xfilter_dport_grp3=
+sb/1/ofdm2gpo=0x44444444
+0:ag1=0x84
+wsc_steps=0
+wl1_wme=on
+filter_dport_grp4=
+wl0_default_ssid=Cisco82134
+filter_dport_grp5=
+filter=on
+immediate_leave_enable=0
+wl1_auth=0
+auth_type_24g=0
+wl0_net_mode=mixed
+dmz_dst_ip=1
+filter_dport_grp6=
+os_ram_addr=80001000
+wl1_hwaddr=58:6D:8F:7B:A5:FA
+filter_dport_grp7=
+ping_size=32
+pc_passwd_deny=0
+wl0_frameburst=on
+filter_dport_grp8=
+wl1_wps_akm=psk2
+wl1_net_mode=mixed
+filter_dport_grp9=
+ddns_username_2=
+tunnel_delegated_prefix=
+crypto_24g=tkip+aes
+log_ipaddr=0
+wl1_wme_bss_disable=0
+boardrev=0x1101
+wl0.14_hwaddr=5A:6D:8F:7B:A5:F6
+ppp_idletime=15
+ppp_passwd=
+0:maxp5gha0=0x42
+wsc_msg_timeout=15
+0:maxp5gha1=0x42
+lastmem_query_interval=1
+sb/1/mcs2gpo0=0x3333
+ddns_enable=0
+wl0_leddc=0x640000
+sb/1/mcs2gpo1=0x6666
+et0macaddr=58:6D:8F:7B:A5:F7
+dmz_src_ip=0.0.0.0 0
+sb/1/mcs2gpo2=0x3333
+login_checked=1
+qos_appport1=0
+QoS_min_wan_speed=128
+wan_ipv6_proto=dhcp
+lan_ipv6_dhcp_prefer=108000
+sb/1/mcs2gpo3=0x6666
+0:ledbh0=11
+qos_appport2=0
+ddns_hostname_buf=
+wl0_wep_buf=
+wl0_radarthrs=1 0x6c0 0x6e0 0x6bc 0x6e0 0x6ac 0x6cc 0x6bc 0x6e0
+wl0_akm=psk psk2
+wan_get_dns=
+sb/1/mcs2gpo4=0x6666
+0:ledbh1=11
+wsc_security_auto=0
+qos_appport3=0
+lan_ipv6_dhcp_mode=0
+sb/1/mcs2gpo5=0x6666
+boot_wait=on
+watchdog=5000
+devpath0=usb/0xbd17
+0:ledbh2=11
+qos_appport4=0
+wps_modelname=Linksys E2500
+wl_phytypes=
+filter_web_host1=
+sb/1/mcs2gpo6=0x6666
+sb/1/temps_period=5
+0:ledbh3=11
+action_service_arg1=
+qos_appport5=0
+tunnel_prefix=
+wl0_infra=1
+filter_web_host2=
+sb/1/mcs2gpo7=0x6666
+0:pa5glw2a0=0xFAF6
+qos_appport6=0
+nctrlsb_5g=none
+filter_web_host3=
+et0mdcport=0
+0:pa5glw2a1=0xFAD6
+wl0_country_code=EU
+wl1_rpcq_rxthresh=1024
+qos_appport7=0
+router_name=Linksys E2500
+emf_rtport_entry=
+wl1_wep=disabled
+pppoe_keepalive=0
+filter_web_host4=
+0:venid=0x14E4
+action_service_bottom=
+wps_config_command=0
+query_response_interval=10
+qos_appport8=0
+filter_web_host5=
+robustness=2
+ddns_wildcard=OFF
+wl1_frag=2346
+https_enable=0
+filter_web_host6=
+lltd_enable=1
+wl1_nbw_cap=1
+key_5g=1
+wl1_nbw=0
+filter_web_host7=
+sb/1/pa1idx=0
+pcar_firstlogin=1
+l2tp_get_ip=
+filter_web_host8=
+log_show_all=0
+reset_gpio=10
+lan_ipv6_dhcp_valid=216000
+wep_buf_24g=
+filter_web_host9=
+pptp_server_ip=
+wl0_bcn_rotate=1
+radius_ipaddr_24g=
+security_mode_24g=wpa2_personal
+ppp_get_ac=
+pmon_ver=CFE 5.60.127.2901 @VERSION_TYPE@
+wan_run_mtu=1500
+restore_defaults=0
+lan_ipv6_ipaddr=fec0::1
+get_sn=10A10C18182134
+get_pa5gha1idxval=2 -371 5294 -1345
+wl1_wpa_gtk_rekey=3600
+vlan2ports=4 5
+wsc_enable=1
+lan_ipv6_dns_secondary=
+wl0.1_hwaddr=58:6D:8F:7B:A5:FB
+wl1_radarargs40_11n=5 4 4 100 0x6b0 0x6d9 0x2c40 0x7f07 12 195 2000 25 400000000 1000 6000000
+wl1_wep_gen=
+wan_pptp_dns=
+wl1_passphrase=
+ppp_username=
+QoS_lan_ctl=0
+wl1_maclist=
+wl0_wme_sta_be=15 1023 3 0 0 off off
+wl0_nctrlsb=lower
+filter_port=
+wan_lease=0
+wl1.1_hwaddr=5A:6D:8F:7B:A5:FB
+machine_comment=E2500
+ddns_enable_buf=
+akm_5g=
+dmz_mac=00:00:00:00:00:00
+sb/1/triso2g=3
+machine_name=TTISD
+ddns_hostname=
+security_mode_5g=disabled
+http_wanport=8080
+filter_ip_grp1=
+sb/1/sromrev=8
+wl0.7_hwaddr=5A:6D:8F:7B:A5:FF
+wl1_amsdu=off
+wl1_crypto=tkip
+filter_ip_grp2=
+wl0_ifname=eth1
+filter_ip_grp3=
+get_pa5gla1idxval=
+wl1_hw_txchain=3
+dr_lan_rx=0
+wan_ipv6_duid=
+lan_ipv6_prefix=
+gn_lan_ifnames=wl0.1
+filter_ip_grp4=
+lan_domain=
+0:subvendid=0x0a5c
+fw_md5sum=25d4d260543752bc91ac9367aef422ee
+query_interval=125
+wpa_gtk_rekey_5g=3600
+wl0_wme_sta_bk=15 1023 7 0 0 off off
+filter_ip_grp5=
+timer_interval=3600
+0:mcs5gpo0=0x5555
+switch_mode_dhcp=1
+filter_ip_grp6=
+0:mcs5gpo1=0x5555
+ip_ct_tcp_established=600
+wl1_bss_maxassoc=128
+radius_port_5g=1812
+pppoe_ac=
+filter_ip_grp7=
+filter_rule1=
+0:mcs5gpo2=0x5555
+startup_query_count=2
+qos_devmac1=00:00:00:00:00:00
+hb_server_ip=
+ipsec_pass=1
+wme_5g=on
+ssid_24g=TTISD
+filter_ip_grp8=
+filter_rule2=
+0:mcs5gpo3=0x5555
+qos_devmac2=00:00:00:00:00:00
+lan_ipv6_dhcp_pref=255
+filter_ip_grp9=
+filter_rule3=
+0:mcs5gpo4=0x8888
+boot_ok=ok
+ipv6_delegate_prefixlen=
+wl1_corerev=24
+filter_rule4=
+0:mcs5gpo5=0x8888
+wl0_radio_pwrsave_level=0
+wl1_txpwr=100
+wl1_active_mac=
+wl1_nmcsidx=-1
+filter_rule5=
+lan_route=
+0:mcs5gpo6=0x8888
+wsc_config=1
+radius_key_5g=
+wl1_channel=0
+wps_device_pin=53211842
+wl0_mrate=0
+filter_ip_grp10=
+filter_rule6=
+0:mcs5gpo7=0x8888
+sb/1/pa0idx=0
+wl0_mode=ap
+filter_rule7=
+wan_gateway=0.0.0.0
+gpio9=wps_button
+dhcp_start=100
+filter_rule8=
+sb/1/pa2gw2a0=0xFAFF
+get_wsc_pin=53211842
+wl0_stbc_tx=auto
+wl1_nmode=-1
+filter_rule9=
+sb/1/pa2gw2a1=0xFB2D
+ident_pass=0
+wl0_ap_isolate=0
+auth_mode_5g=none
+sb/1/tempthresh=120
+cfe_ping_timeout=2
+wsc_akm=disabled
+l2tp_server_ip=
+net_mode_24g=mixed
+os_flash_addr=bfc40000
+0:pa05gidx=0
+wl0.15_hwaddr=5A:6D:8F:7B:A5:F7
+wl0_wme_no_ack=off
+wl0_ampdu=on
+wl0_gmode=1
+dhcp_lease=0
+sromrev=8
+qos_devpri1=0
+wl1_rts=2347
+0:pa5ghw2a0=0xfad4
+lastmem_query_count=2
+qos_devpri2=0
+remote_ip_any=1
+lan_ipv6_dhcp=on
+0:pa5ghw2a1=0xfabf
+ipv6_sntp_servers=
+gn_white_list=
+boardtype=0xF550
+wl_obss_coex=1
+wep_24g=disabled
+is_default=1
+wl_active_add_mac=0
+device_info_set_flag0=0
+ctf_disable=0
+wps_uuid=0x000102030405060708090A0B0C0D0EBB
+wl0_nband=2
+ping_ip=
+wl0_auth_type=0
+stats_server=
+sock_rmem_max=66560
+lan_ipv6_change=0
+static_route=
+wl1_txchain=3
+wl0_nreqd=0
+PC_enable=0 0 0
+wl0_wep_last=
+wl0_security_mode=wpa2_personal
+lan_netmask=255.255.255.0
+wl1_obss_coex=1
+ddns_backmx=NO
+dmz_enable=0
+lan1_ifname=br1
+device_info_mac0=64:51:06:07:ff:22
+get_country=EU
+wl1_radarargs_11a=5 4 4 100 0x2b0 0x2f0 0x0 0x0 8 500 4000 10 240000000 1000 3000000
+wl1_key=1
+wl0_dtim=1
+channel_24g=0
+wl0_ssid=TTISD
+EC_Server=1
+http_username=
+manual_rate=0
+port_trigger=
+wl1_wep_last=
+qos_devname1=
+lan_ipv6_prefixlen=0
+filter_web_host10=
+qos_devname2=
+wl0_dfs_preism=60
+os_date=May  6 2011
+wl1_radio_pwrsave_level=0
+wan_ipv6_life=0
+boardpwrctl=0xD00
+sb/1/regrev=0
+wps_random_ssid_prefix=Cisco_WPS_
+http_lanport=80
+sb/1/ag0=0x82
+filter_mac_grp1=
+0:rxchain=3
+sb/1/ag1=0x83
+wl_macmode=disabled
+ppp_service=
+ppp_redialperiod=30
+filter_mac_grp2=
+force_non_querier=0
+wl1_wme_ap_be=15 63 3 0 0 off off
+filter_mac_grp3=
+wan_domain=
+wan_hwname=
+nvram_version=1
+switch_get_dns=
+warning_http_port=52000
+gn_account_duration=24
+nbw_5g=0
+wl_phytype=n
+wl0_key1=
+filter_mac_grp4=
+wan_netmask=0.0.0.0
+lan_lease=86400
+turn_leds=1
+wl_lazywds=0
+wl0_vlan_prio_mode=off
+wl0_key2=
+pppoe_static_ip=
+filter_mac_grp5=
+wl0.2_hwaddr=5A:6D:8F:7B:A5:FA
+wl0_key3=
+filter_mac_grp6=
+wl0.1_maclist=
+wl1_radius_key=
+wl0_key4=
+filter_mac_grp7=
+wl0_mac_filter=0
+wep_buf_5g=
+wl1_radarargs_11n=5 4 3 100 0x6b0 0x6f0 0x2c40 0x7f09 6 300 1200 25 200000000 1000 3000000
+filter_mac_grp8=
+wl1.2_hwaddr=5A:6D:8F:7B:A5:F8
+wl1_wme_ap_bk=15 1023 7 0 0 off off
+filter_mac_grp9=
+0:tempthresh=120
+QoS_wan_speed=81920
+pptp_pass=1
+pptp_get_ip=
+wl0_vifs=
+ppp_demand=0
+wl0.8_hwaddr=5A:6D:8F:7B:A5:F0
+sb/1/txq_len=1024
+mtu_enable=0
+wl1_bcn=100
+hwaddr_5g=58:6D:8F:7B:A5:FA
+wl1_ifname=eth2
+ppp_keepalive=0
+0:pa5gw2a0=0xfb01
+ehciirqt=3
+aftr_addr=2001:db8:ff4e:4::4
+0:pa5gw2a1=0xfab5
+block_activex=0
+vlan2hwname=et0
+wl1_wep_buf=
+wl0_hw_rxchain=3
+wl_rpcq_rxthresh=1024
+remote_mgt_https=0
+http_passwd=admin
+block_wan=1
+gn_lan_ipaddr=192.168.33.1
+wl1_auth_mode=none
+sb/1/extpagain2g=2
+lan_stp=0
+wl0_wme_ap_vi=7 15 1 6016 3008 off off
+0:pa5glw1a0=0x13F7
+0:mcs5glpo0=0x0000
+wl1_txq_thresh=1024
+ripng_enable=0
+wl_mode=ap
+wl0_bss_maxassoc=128
+0:pa5glw1a1=0x14BE
+0:mcs5glpo1=0x0000
+0:mcs5glpo2=0x0000
+ipv4_mask_len=0
+ppp_demand_l2tp=1
+0:mcs5glpo3=0x0000
+qtdc_vid=2652
+wan_pptp_gateway=
+wl0_plcphdr=long
+wl0_rate=0
+wl0_closed=0
+0:antswctl5g=0
+0:mcs5glpo4=0x0000
+0:pa15glidx=0
+wl0.10_hwaddr=5A:6D:8F:7B:A5:F2
+sel_pptp_dhcp=1
+wl0_macmode=disabled
+xtalfreq=20000
+0:mcs5glpo5=0x0000
+wl0_radioids=BCM2057
+lan_dhcp=0
+sb/1/stbcpo=0x0000
+0:mcs5glpo6=0x0000
+wl0_phytype=n
+0:mcs5glpo7=0x0000
+dr_wan_rx=0
+security_mode2=disabled
+wl0_lazywds=0
+nctrlsb_24g=lower
+filter_tod_buf1=
+block_proxy=0
+wl1_radioids=BCM2057
+filter_tod_buf2=
+filter_tod_buf3=
+wps_proc_status=0
+filter_tod_buf4=
+upnp_ssdp_interval=60
+boardflags2=0x00008000
+blink_diag_led=1
+wl_default_ssid=Cisco82134
+filter_tod_buf5=
+sb/1/aa2g=3
+sb/1/bwduppo=0
+0:maxp5ga0=0x38
+wl1_dfs_channels=
+http_client_ip=192.168.0.118
+dr_lan_tx=0
+wl1_nctrlsb=none
+wl0_afterburner=off
+filter_tod_buf6=
+sb/1/txchain=3
+0:maxp5ga1=0x38
+switch_gateway=0.0.0.0
+wsc_ie=enabled
+wl_wds_timeout=1
+wl0_antdiv=-1
+filter_tod_buf7=
+filter_tod10=
+lan_hwaddr=58:6D:8F:7B:A5:F7
+wl_wps_mode=enabled
+filter_tod_buf8=
+wan_dns=
+get_pa5gha0idxval=0 -379 5214 -1324
+http_client_mac=64:51:06:07:FF:22
+qtdc1_sz=10
+6to4_ifname=sit1
+filter_tod_buf9=
+wan_ipv6_dns_primary=
+0:regrev=0
+action_service=wireless
+ip_conntrack_max=8196
+gn_account_password=guest
+wps_pbc_method_hw=0
+wl1_frameburst=on
+lan_wps_oob=disabled
+wl0_wpa_psk=wij zijn secure
+gn_lan_ifname=br1
+wait_time=3
+0:leddc=0xFFFF
+public_ip=
+web_wl_filter=0
+wl0_amsdu=off
+gn_dhcp_num=50
+wl0_mac_list=
+daylight_time=1
+igmp_x_mld_mode=4to4
+radius_key_24g=
+dhcp_wins=wan
+tftp_recv_timeout=3
+get_pa5gla0idxval=
+multicast_pass=1
+lan_ipv6_dhcp_rebind=0
+wl1_radarthrs=1 0x6c0 0x6e0 0x6bc 0x6e0 0x6ac 0x6cc 0x6bc 0x6e0
+filter_tod_buf10=
+os_server=
+wl1_mac_list=
+pppoe_static=0
+hb_server_domain=
+ipv6_delegate_en=1
+wan_proto=dhcp
+clkdivsf=2
+wl1_afterburner=off
+sb/1/pa2gw1a0=0x12E3
+wl1_stbc_tx=auto
+wl0_unit=0
+sb/1/pa2gw1a1=0x149F
+0:sromrev=8
+0:aa5g=3
+wan_ipv6_domain=
+wl0_widechannel=0
+wl_country_code=EU
+DHCP6_REBIND_INSTEAD_OF_SOLICIT=1
+ddns_cache=
+gn_lan_ipv6_prefix=
+ipv6_6to4_subnetid=0
+wl0_txpwr=100
+wl_hwaddr=
+0:ofdm5gpo=0x00000000
+wl0.3_hwaddr=5A:6D:8F:7B:A5:FB
+QoS_lan_speed=102400
+nbw_cap_24g=1
+wl1_sta_retry_time=5
+wl0_net_reauth=36000
+wl0_bss_enabled=1
+wps_config_state_24g=0
+static_route_name=
+sb/1/boardflags2=0x00008000
+0:pa5ghw1a0=0x145e
+tftpd_ipaddr=192.168.1.254
+wl1.3_hwaddr=5A:6D:8F:7B:A5:F9
+gn_enable=0
+wl0_nmode=-1
+0:pdetrange5g=2
+0:pa5ghw1a1=0x14ae
+wl0.9_hwaddr=5A:6D:8F:7B:A5:F1
+ntp_enable=1
+qtdc0_sz=0
+enable_game=0
+upbunit=0
+dhcp_statics=
+wl0_wsc_mode=enabled
+remote_ip=0.0.0.0 0
+wps_restart=0
+forward_port=
+wl_warn_url=192.168.1.1/
+wl1_wsc_mode=enabled
+switch_netmask=0.0.0.0
+wsc_config_method=pin
+wl1_bcn_rotate=1
+0:stbcpo=0x0000
+sel_qosport1=0
+wl_wps_reg=disabled
+wps_ssr_ipaddr=
+sel_qosport2=0
+ipv6_filter=on
+wl0_wds=
+filter_mac_grp10=
+sel_qosport3=0
+wl1_widechannel=0
+ppp_static_ip=
+sel_qosport4=0
+ddns_service=dyndns
+forward_portsip=
+block_java=0
+tunnel_prefix_len=0
+wl1_wme_sta_be=15 1023 3 0 0 off off
+log_level=0
+0:ccode=0
+sel_qosport5=0
+wl1_closed=1
+wl0_reg_mode=off
+wpa_gtk_rekey_24g=3600
+ntp_server=
+ct_modules=
+QoS_cnt=0
+sel_qosport6=0
+lan_ipv6_dns=
+wl1_bss_enabled=1
+wps_mfstring=Cisco
+wan_hwaddr=58:6D:8F:7B:A5:F8
+wl0.11_hwaddr=5A:6D:8F:7B:A5:F3
+sel_qosport7=0
+wep_5g=disabled
+sel_qosport8=0
+lan_ipv6_dns_primary=
+wl1_reg_mode=off
+wl1_akm=
+lan_ifnames=vlan1 eth1 eth2 eth3
+hwaddr_24g=58:6D:8F:7B:A5:F9
+pppoe_ifname=
+tunnel_status=disconnected
+wan_ipv6_renew=0
+wl1_wme_sta_bk=15 1023 7 0 0 off off
+wl0_mac_deny=
+wl0_wme=on
+wl0_radius_port=1812
+wl0_auth=0
+0:boardtype=0x0521
+wl_40m_disable=0
+tunnel_br=
+passphrase_5g=
+wl0_rxchain=3
+wl1_radio=1
+wep_gen_5g=
+wl0_wme_bss_disable=0
+wl0_radius_ipaddr=
+wl1_mac_deny=
+wep_bit_5g=64
+auth_type_5g=0
+pppoe_service=
+gn_last_cable_stat=0
+wl0_wme_sta_vi=7 15 2 6016 3008 off off
+ure_disable=1
+wl_country=EU
+tunnel_mode=0
+wl1_antdiv=-1
+mfg_radio=off
+sb/1/boardflags=0x00000710
+tftp_rrq_timeout=3
+dhcp_start_conflict=0
+traceroute_ip=
+sb/1/leddc=0xFFFF
+0:pa5gw1a0=0x136c
+ddns_change=
+user_language=
+remote_management=0
+key1_24g=
+wan_ifnames=vlan2
+0:pa5gw1a1=0x14c5
+block_loopback=0
+gn_approval_list=
+wl0_wme_sta_vo=3 7 2 3264 1504 off off
+get_sern=1234567890
+sb/1/tempoffset=0
+wl1_ap_isolate=0
+wl1_security_mode=disabled
+wl_warnenable_url=192.168.1.1/
+wl0_wps_reg=disabled
+ppp_mru=1500
+http_method=post
+wl0.1_mode=ap
+wl1_wme_no_ack=off
+0:boardrev=0x1300
+0:devid=0x4348
+QoS=0
+dslite_cgn_addr=2001:db8:ff4e:11::8
+wl1_radius_port=1812
+wl1_auth_type=0
+filter_port_grp1=
+lan_proto=dhcp
+upnp_internet_dis=0
+os_name=linux
+clkfreq=300,150,75
+lan_ipaddr=192.168.0.1
+0:pa5glw0a0=0xFE64
+wl0_maxassoc=128
+filter_port_grp2=
+vlan1hwname=et0
+0:pa5glw0a1=0xFE87
+ddns_passwd_2=
+auth_5g=0
+filter_port_grp10=
+filter_port_grp3=
+dr_wan_tx=0
+wl1_plcphdr=long
+filter_port_grp4=
+filter_id=1
+switch_mode=0
+wl1_macmode=disabled
+wl1_maxassoc=128
+wl0_phytypes=n
+filter_port_grp5=
+wps_sta_pin=00000000
+wl0_frag=2346
+wl0_wep=disabled
+filter_port_grp6=
+router_disable=0
+0:txq_len=1024
+ddns_username=
+wl0.1_closed=0
+wl1_phytype=n
+filter_port_grp7=
+ddns_passwd=
+wl1_lazywds=0
+wl1_phytypes=n
+pppoe_passwd=
+filter_port_grp8=
+switch_get_domain=
+wl0.4_hwaddr=5A:6D:8F:7B:A5:FC
+gn_lan_ipv6_addr=
+lan_ipv6_addr=
+auth_24g=0
+wl0_nbw=0
+nbw_24g=0
+filter_port_grp9=
+0:temps_hysteresis=5
+ppp_ac=
+log_enable=0
+sdram_config=0x0103
+wl0_radarargs40_11n=5 4 4 100 0x6b0 0x6d9 0x2c40 0x7f07 12 195 2000 25 400000000 1000 6000000
+filter_web_url10=
+wl0_country=EU
+sys_country=EU
+get_pa2ga1idxval=
+0:pa05glidx=0
+wsc_count2=0
+dmz_ipaddr=0
+vlan1ports=0 1 2 3 5*
+sb/1/temps_hysteresis=5
+wl_txq_thresh=1024
+wl_wds=
+igmp_version=0
+ddns_hostname_2=
+wl1_dfs_preism=60
+scratch=a0180000
+auth_exemption_list=
+radius_ipaddr_5g=
+wl1_mode=ap
+lan_ipv6_domain=
+wl0.1_ssid=TTISD-guest
+wl0_rateset=default
+boot_hw_ver=1.0
+wan_ipv6_gateway=
+0:mcs5ghpo0=0x3333
+wl1_wpa_psk=
+wl0_wme_apsd=on
+sb/1/macaddr=00:01:36:1F:E4:5B
+0:boardflags=0x00000400
+0:mcs5ghpo1=0x8888
+qtdc1_ep=18
+wl0_wep_bit=64
+closed_24g=0
+TMSSS_enable=0 0 65
+sb/1/ccode=0
+0:mcs5ghpo2=0x3333
+get_pa5ga1idxval=2 -346 5317 -1355
+wl_wme=on
+pppoe_idletime=15
+0:mcs5ghpo3=0x8888
+0:pa15gidx=2
+qos_enable_ever=0
+forward_single=
+gn_max_account=5
+wl1_wme_apsd=on
+net_reauth_5g=36000
+0:mcs5ghpo4=0x3333
+ping_times=5
+get_mac=58:6D:8F:7B:A5:F7
+0:pa15ghidx=2
+remote_upgrade=0
+lan_ifname=br0
+0:mcs5ghpo5=0x8888
+0:tempoffset=0
+wl1_mac_filter=0
+filter_services=$NAME:003:DNS$PROT:003:udp$PORT:005:53:53<&nbsp;>$NAME:004:Ping$PROT:004:icmp$PORT:003:0:0<&nbsp;>$NAME:004:HTTP$PROT:003:tcp$PORT:005:80:80<&nbsp;>$NAME:005:HTTPS$PROT:003:tcp$PORT:007:443:443<&nbsp;>$NAME:003:FTP$PROT:003:tcp$PORT:005:21:21<&nbsp;>$NAME:004:POP3$PROT:003:tcp$PORT:007:110:110<&nbsp;>$NAME:004:IMAP$PROT:003:tcp$PORT:007:143:143<&nbsp;>$NAME:004:SMTP$PROT:003:tcp$PORT:005:25:25<&nbsp;>$NAME:004:NNTP$PROT:003:tcp$PORT:007:119:119<&nbsp;>$NAME:006:Telnet$PROT:003:tcp$PORT:005:23:23<&nbsp;>$NAME:004:SNMP$PROT:003:udp$PORT:007:161:161<&nbsp;>$NAME:004:TFTP$PROT:003:udp$PORT:005:69:69<&nbsp;>$NAME:003:IKE$PROT:003:udp$PORT:007:500:500<&nbsp;>
+boardflags=0x00000710
+0:ofdm5glpo=0x00000000
+0:mcs5ghpo6=0x3333
+wl1_ui_channels=36,40,44,48
+gn_cur_account=0
+sdram_refresh=0x1a5b
+wandevs=vlan2
+0:antswitch=0
+0:mcs5ghpo7=0x8888
+wan_ipv6_prefixlen=0
+lan_ipv6_dns_mode=1
+dhcp_domain=wan
+sb/1/cck2gpo=0x0000
+0:bwduppo=0
+wl0.12_hwaddr=5A:6D:8F:7B:A5:F4
+et_txq_thresh=1024
+0:txchain=3
+0:phycal_tempdelta=0
+sdram_ncdl=0x5800001a
+wan_gateway_buf=0.0.0.0
+wl1_wme_ap_vi=7 15 1 6016 3008 off off
+sb/1/pa2gw0a0=0xFF01
+block_cookie=0
+sb/1/pa2gw0a1=0xFF85
+wan_iface=vlan2
+wl1_hw_rxchain=3
+ezc_enable=1
+sb/1/phycal_tempdelta=0
+ssid_5g=TTISD
+wl0_nmode_protection=auto
+wsc_result=0
+wl1_dtim=1
+wl1_ssid=TTISD
+is_modified=0
+upnp_wan_proto=
+dhcp_num=50
+filter_web_url1=
+wan_ipaddr=0.0.0.0
+0:pa5ghw0a0=0xfe85
+0:ofdm5ghpo=0x33330000
+wl0_passphrase=
+ppp_demand_hb=0
+filter_web_url2=
+0:pa5ghw0a1=0xfe8d
+wl0_rpcq_rxthresh=1024
+filter_web_url3=
+wl0_rts=2347
+filter_web_url4=
+wan_ipv6_lease=0
+crypto_5g=tkip
+filter_web_url5=
+warning_page_checked=1
+wl_ifname=
+filter_web_url6=
+wan_wins=0.0.0.0
+sb/1/devid=0x4347
+sb/1/bw40po=0x0000
+qtdc0_ep=4
+ui_language=en
+ntp_mode=auto
+channel_5g=0
+http_enable=1
+filter_web_url7=
+0:boardflags2=0x00000000
+wl0_hw_txchain=3
+l2tp_pass=1
+gn_bw_upstream=56
+gn_http_port=51000
+wl1_nmode_protection=auto
+wl1_key1=
+wpa_psk_24g=wij zijn secure
+filter_web_url8=
+wan_speed=4
+wl1_key2=
+ppp_demand_pppoe=1
+pppoe_username=
+filter_web_url9=
+os_version=5.60.127.2901 
+qos_appname1=
+gn_wan_stat_record=0
+wl1_key3=
+sdram_phyctl=0x00000001
+qos_appname2=
+wl1_leddc=0x640000
+wl1_key4=
+wl0_wpa_gtk_rekey=3600
+qos_appname3=
+mac_clone_enable=0
+wl0_sta_retry_time=5
+radius_port_24g=1812
+ppp_get_srv=
+hnap_enable=1
+wl_random_channel=1
+qos_appname4=
+qos_appname5=
+wan_mtu=1500
+filter_ipv6_cnt=0
+wl0.1_macmode=disabled
+gn_https_port=51001
+passphrase_24g=
+wl0_key=1
+hnap_devicename=TTISD
+device_view_type=0
+qos_appname6=
+wl0_active_mac=
+qos_appname7=
+rate_mode=1
+emf_entry=
+wl_maclist=
+wps_addER=0
+0:cddpo=0x0000
+mld_prefix=ff08::
+ip_conntrack_udp_timeout=65
+qos_appname8=
+wl1_infra=1
+wps_config_state_5g=0
+mfg_wait=on
+http_from=lan
+console_loglevel=1
+et0phyaddr=30
+wl0.5_hwaddr=5A:6D:8F:7B:A5:FD
+switch_ipaddr=0.0.0.0
+ddns_mx=
+ipv6_delegate_prefix=
+tmsss_enabled=0
+time_zone=+01 2 2
+charset=utf-8
+wl1_rxchain=3
+wan_ipv6_dns=
+wan_auto_detect_result=UNKNOWN
+wl_wps_config_state=0
+0:triso5g=3
+wan_ipv6_rebind=0
+wan_get_domain=
+net_mode_5g=mixed
+wan_ifname=vlan2
+adminui_warning_show=1
+upnp_max_age=180
+wl_radioids=
+wep_gen_24g=
+sb/1/pdetrange2g=2
+wl1_default_ssid=Cisco82134
+gn_lan_ipv6_prefixlen=64
+wl1_rate=0
+wl0_dfs_postism=60
+wan_hostname=
+landevs=vlan1 wl0 wl1
+wl0_radio=1
+wl_corerev=
+ppp_mtu=1500
+boot_hw_model=E2500
+0:pa5gw0a0=0xfe99
+get_2g_country_code=EU
+detect_lang=nl
+ddns_interval=60
+wl0_nbw_cap=1
+log_type=ilog
+0:pa5gw0a1=0xfea6
+wl1_channels=36,40,44,48
+wl0_max_channel=13
+manual_boot_nv=0
+wps_mode=enabled
+wl0_bcn=100
+key_24g=1
+tftp_max_retries=5
+wl1_wps_reg=disabled
+wsc_ap_role=proxy
+security_mode_0=psk psk2
+security_mode_1=disabled
+wl0_hwaddr=58:6D:8F:7B:A5:F9
+ppp_static=0
+filter_tod1=
+gn_lan_netmask=255.255.255.0
+wl1_net_reauth=36000
+filter_tod2=
+wan_ipv6_dhcp=on
+ppp_demand_pptp=1
+filter_tod3=
+emf_enable=0
+wl0_wep_gen=
+filter_tod4=
+ezc_version=2
+sb/1/tssipos2g=1
+wl0.13_hwaddr=5A:6D:8F:7B:A5:F5
+ddns_passwd_buf=
+wk_mode=gateway
+wl0_gmode_protection=auto
+filter_tod5=
+get_5g_country_code=EU
+nf_alg_sip=0
+wl0_maclist=
+filter_tod6=
+wl0_obss_coex=1
+filter_tod7=
+filter_tod8=
+sdram_init=0x0419
+wme_24g=on
+filter_tod9=
+wl_ap_isolate=0
+wl1_dfs_postism=60
+lan_wins=
+sb/1/antswctl2g=1
+0:bw40po=0x0000
+ip_conntrack_udp_timeouts=65 180
+wps_modelnum=v1.0.01
+lan_hwnames=
+dl_ram_addr=a0001000
+wl1_mrate=0
+wl1_radius_ipaddr=
+wl1_country=EU
+wps_method=1
+lan1_ifnames=wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3
+wan_ipv6_dns_secondary=
+gn_bw_downstream=128
+wpa_psk_5g=
+closed_5g=1
+wl_wme_no_ack=off
+pppoe_demand=0
+wl1_country_code=EU
+lan_upnp_wfa_subc_num=0
+wan_ipv6_ipaddr=
+wl1_gmode_protection=auto
+wl0_radarargs_11a=5 4 4 100 0x2b0 0x2f0 0x0 0x0 8 500 4000 10 240000000 1000 3000000
+wl0_radius_key=
+wl0_wps_config_state=0
+filter_dport_grp10=
+gpio23=wombo_reset
+device_info_name0=AINCRAD
+lang_detected=1
+ddns_username_buf=
+wl0_wme_ap_be=15 63 3 0 0 off off
+gn_dhcp_start=100
+wl0_nmcsidx=-1
+wl0_corerev=28
+qtdc_pid=48407
+ipv6_6to4_enable=0
+wl1_rateset=default
+wl1_ampdu=on
+nbw_cap_5g=1
+wl1_gmode=1
+wl0_channel=0
+get_pa2ga0idxval=
+wl1_unit=1
+wps_device_name=Linksys E2500
+wl0_wds_timeout=1
+sb/1/ledbh0=11
+wl0.1_bss_enabled=0
+wl1_wep_bit=64
+sb/1/maxp2ga0=0x48
+sb/1/ledbh1=11
+dr_setting=0
+ipv6_multicast_pass=1
+wl0_wps_mode=enabled
+wl0_wme_ap_bk=15 1023 7 0 0 off off
+upnp_enable=1
+sb/1/maxp2ga1=0x48
+sb/1/ledbh2=11
+wps_config_method=0x84
+akm_24g=psk psk2
+sb/1/ledbh3=11
+0:tssipos5g=1
+wan_ipv6_prefix=
+wl1_nband=1
+wl_wsc_mode=enabled
+emf_uffp_entry=
+wl1_wps_mode=enabled
+wl1_wme_sta_vi=7 15 2 6016 3008 off off
+wl1_wps_config_state=0
+sb/1/cddpo=0x0000
+ddns_status=
+filter_ipv6_list=
+wep_bit_24g=64
+filter_rule10=
+log_show_type=ALL
+wps_status=0
+wl0_txq_thresh=1024
+wl1_nreqd=0
+dmz_src_any=1
+wl1_wps_crypto=aes
+wl0_radarargs_11n=5 4 3 100 0x6b0 0x6f0 0x2c40 0x7f09 6 300 1200 25 200000000 1000 3000000
+sb/1/rxchain=3
+get_pa5ga0idxval=0 -359 4972 -1279
+wl0_auth_mode=none
+hnd_time_block=2
+net_reauth_24g=36000
+boot_ver=v4.13
+0:pa05ghidx=0
+wps_mixedmode=0
+wl0.6_hwaddr=5A:6D:8F:7B:A5:FE
+wl1_wme_sta_vo=3 7 2 3264 1504 off off
+autofw_port0=
+wl0_crypto=tkip+aes
+boardnum=42
+language=
+wl0_txchain=3
+def_hwaddr=00:00:00:00:00:00
+wl1_wds=
+sb/1/antswitch=0
+0:extpagain5g=2
+0:temps_period=5
+lan_ipv6_dhcp_renew=54000
+wl1_vlan_prio_mode=off
+auth_mode_24g=none
+0:macaddr=00:01:36:1F:E4:5C
+detect_charset=ISO-8859-1
+wl1_wds_timeout=1
+wl_mac_filter=0
+key1_5g=
+upnp_config=1
+startup_query_interval=31
+QoS_wan_ctl=1
+filter_dport_grp1=
+0:maxp5gla0=0x3C
+0:subdevid=0xbdc
+wl_radio_pwrsave_level=0
+filter_dport_grp2=
+0:maxp5gla1=0x3C
+0:ag0=0x05
