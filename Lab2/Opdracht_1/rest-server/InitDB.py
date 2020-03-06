@@ -30,10 +30,10 @@ for gid in getAllTablesQuery.cursor.fetchall():
             print "Could not drop table"
 
 # Create sensor table
-createSensorTable = conn.execute("CREATE TABLE `sensors` ( `id` VARCHAR(255),`ip_address` VARCHAR(255),PRIMARY KEY (`id`));")
-
-# Create key table
-createKeyTable = conn.execute("CREATE TABLE `keys` (`id` VARCHAR(255), `sensor_id` VARCHAR(255), `public_key` VARCHAR(255), PRIMARY KEY(`id`));")
+createSensorTable = conn.execute("CREATE TABLE `sensors` ( `id` VARCHAR(255), `private_key` VARCHAR(255),PRIMARY KEY (`id`));")
 
 # Create attack notification table
-createAttackTable = conn.execute("CREATE TABLE `malicious_requests` (`id` VARCHAR(255), `date` TIMESTAMP, `ip_address` VARCHAR(255), PRIMARY KEY(`id`));")
+createAttackTable = conn.execute("CREATE TABLE `malicious_requests` (`id` VARCHAR(255), `date` TIMESTAMP, `ip_address` VARCHAR(255), `descr` VARCHAR(255), PRIMARY KEY(`id`));")
+
+# Create fire notification table
+createFireTable = conn.execute("CREATE TABLE `fires` (`sensor_id` VARCHAR(255), `date` TIMESTAMP, `temperature` FLOAT(24))")
