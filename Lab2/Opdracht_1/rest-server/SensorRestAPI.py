@@ -37,6 +37,7 @@ db_connect = create_engine('sqlite:///' + db_file)
 app = Flask(__name__)
 api = Api(app)
 
+
 def encrypt_json(json):
     key = RSA.importKey(open("cert/public.pem", "rb"))
     plain = "{"
@@ -47,7 +48,7 @@ def encrypt_json(json):
             plain += str(val) + ","
         else:
              plain +="\"" + str(val) + "\","
-    
+
     plain = plain[:-1]
     plain += "}"
 
@@ -64,12 +65,13 @@ def notifyMaliciousAttempt(descr) :
     print("Malicious attempt from " + request.remote_addr)
     id = str(uuid.uuid4())
     conn = db_connect.connect()
-    query = conn.execute("INSERT INTO malicious_requests (`id`, `date`, `ip_address`, `descr`) VALUES (\"" + id + "\", \"" + str(datetime.now()) + "\", \"" + request.remote_addr + "\", \"" + descr + "\");")
+    query = conn.execute("INSERT INTO malicious_requests (`id`, `date`, `ip_address`, `descr`) "\
+                         "VALUES (\"" + id + "\", \"" + str(datetime.now()) + "\", \"" + request.remote_addr + "\", \"" + descr + "\");")
 
 def notifyFire(sensor_id, temp):
     conn = db_connect.connect()
-    query = conn.execute("INSERT INTO fires (`sensor_id`, `date`, `temperature`) VALUES (\"" + sensor_id + "\", \"" + str(datetime.now()) + "\", "+ str(temp) + ")")
-
+    query = conn.execute("INSERT INTO fires (`sensor_id`, `date`, `temperature`) "\
+                         "VALUES (\"" + sensor_id + "\", \"" + str(datetime.now()) + "\", "+ str(temp) + ")")
 
 
 
@@ -78,6 +80,7 @@ class Home(Resource):
 
     def get(self):
         return "Welcome to the Super Burner 3000!"
+
 
 class Config(Resource):
     ROUTE = Home.ROUTE + "config"
@@ -94,10 +97,9 @@ class Config(Resource):
                     "msg": "You sneaky bastard"
                 }
 
-            payload = config 
+            payload = config
             if use_encryption:
                 payload = encrypt_json(config)
-
 
             response = {
                 "msg": payload
@@ -112,8 +114,9 @@ class Config(Resource):
 
 class Notify(Resource):
     ROUTE = Home.ROUTE + "notify"
+
     def get(self):
-        conn = db_connect.connect()
+        return error_response
 
     def post(self):
         try:
@@ -129,7 +132,7 @@ class Notify(Resource):
                 return {
                     "msg": "You sneaky bastard"
                 }
-                
+
             #Get private key of sensor
             conn = db_connect.connect()
             private_key = ""
@@ -137,7 +140,7 @@ class Notify(Resource):
 
             for entry in getKeys.cursor.fetchall():
                 private_key = entry[0]
-           
+
             key = RSA.importKey(private_key)
 
             try:
@@ -151,22 +154,19 @@ class Notify(Resource):
                 return {
                     "error": "Could not decrypt message"
                 }
-            
+
             temp = decrypted["temperature"]
-           
+
             notifyFire(sensor_id, temp)
             return success_response
         except:
             notifyMaliciousAttempt("NOTIFY_POST: " + str(sys.exc_info()))
             return error_response
-        
-        
 
-    
 
 class Sensors(Resource):
     ROUTE = Home.ROUTE + "sensors"
-    
+
     def get(self):
         try:
             conn = db_connect.connect()
@@ -179,7 +179,7 @@ class Sensors(Resource):
                     "id": record[0]
                 }
                 sensors.append(sensor)
-            
+
 
             return jsonify(sensors)
         except:
@@ -189,33 +189,32 @@ class Sensors(Resource):
     # Add sensor to the system
     def post(self):
         # try:
-            id = request.json["id"]
-            signature = request.json["signature"]
+        id = request.json["id"]
+        signature = request.json["signature"]
 
-            isLegit = verify_signature(signature, id)
+        isLegit = verify_signature(signature, id)
 
-            if not isLegit:
-                notifyMaliciousAttempt("SENSORS_POST: Wrong signature")
-                return {
-                    "msg": "You sneaky bastard"
-                }
-
-            public, private = rsa.newkeys(2048)
-
-            private_key = private.exportKey()
-            
-
-
-            conn = db_connect.connect()
-            deleteExisting = conn.execute("DELETE FROM sensors WHERE id=\""+ id + "\";")
-            query = conn.execute("INSERT INTO sensors (`id`, `private_key`) VALUES (\"" + id + "\", \"" + private_key + "\");")
-
+        if not isLegit:
+            notifyMaliciousAttempt("SENSORS_POST: Wrong signature")
             return {
-                "public_key": b64encode(public.exportKey())
-            };
+                "msg": "You sneaky bastard"
+            }
+
+        public, private = rsa.newkeys(2048)
+
+        private_key = private.exportKey()
+
+        conn = db_connect.connect()
+        deleteExisting = conn.execute("DELETE FROM sensors WHERE id=\""+ id + "\";")
+        query = conn.execute("INSERT INTO sensors (`id`, `private_key`) VALUES (\"" + id + "\", \"" + private_key + "\");")
+
+        return {
+            "public_key": b64encode(public.exportKey())
+        }
         # except:
         #     notifyMaliciousAttempt("SENSORS_POST: " + str(sys.exc_info()[0]))
         #     return error_response;
+
 
 class Debug(Resource):
     ROUTE = Home.ROUTE + "debug"
@@ -225,6 +224,7 @@ class Debug(Resource):
         signature = request.json["signature"]
 
         verify_signature(signature, id)
+
 
 class MaliciousAttempts(Resource):
     ROUTE = Home.ROUTE + "malicious_attempts"
@@ -243,8 +243,9 @@ class MaliciousAttempts(Resource):
                 "descr": row[3]
             }
             attempts.append(attempt)
-        
+
         return jsonify(attempts)
+
 
 class Fires(Resource):
     ROUTE = Home.ROUTE + "fires"
@@ -266,17 +267,18 @@ class Fires(Resource):
         return jsonify(fires)
 
 
-api.add_resource(Home        , Home.ROUTE)
-api.add_resource(Sensors    , Sensors.ROUTE)
-api.add_resource(Notify     , Notify.ROUTE)
-api.add_resource(Debug      , Debug.ROUTE)
-api.add_resource(Config     , Config.ROUTE)
+api.add_resource(Home             , Home.ROUTE)
+api.add_resource(Sensors          , Sensors.ROUTE)
+api.add_resource(Notify           , Notify.ROUTE)
+api.add_resource(Debug            , Debug.ROUTE)
+api.add_resource(Config           , Config.ROUTE)
 api.add_resource(MaliciousAttempts, MaliciousAttempts.ROUTE)
-api.add_resource(Fires      , Fires.ROUTE)
+api.add_resource(Fires            , Fires.ROUTE)
 
 use_encryption = False
 
 
 if __name__ == '__main__':
-    app.run(host='10.42.0.1', port='5000', debug=True, ssl_context=('cert/cert.pem', 'cert/key.pem'))
+    app.run(host='127.0.0.1', port='5000', debug=True, ssl_context=('cert/cert.pem', 'cert/key.pem'))
+    # app.run(host='10.42.0.1', port='5000', debug=True, ssl_context=('cert/cert.pem', 'cert/key.pem'))
     # app.run(host='10.42.0.1', port='5000', debug=True)

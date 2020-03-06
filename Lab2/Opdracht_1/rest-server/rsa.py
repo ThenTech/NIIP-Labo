@@ -5,7 +5,18 @@ from Crypto.Hash import SHA512, SHA384, SHA256, SHA, MD5
 from Crypto import Random
 from base64 import b64encode, b64decode
 
-hash = "SHA-256"
+use_hash = "SHA-256"
+
+def _get_digest():
+    _hashes = {
+        "SHA-1"  : SHA.new,
+        "SHA-256": SHA256.new,
+        "SHA-384": SHA384.new,
+        "SHA-512": SHA512.new,
+        "MD5"    : MD5.new,
+    }
+
+    return _hashes.get(use_hash, _hashes["MD5"])()
 
 def newkeys(keysize):
     random_generator = Random.new().read
@@ -30,33 +41,15 @@ def decrypt(ciphertext, priv_key):
     return cipher.decrypt(ciphertext)
 
 def sign(message, priv_key, hashAlg="SHA-256"):
-    global hash
-    hash = hashAlg
+    global use_hash
+    use_hash = hashAlg
     signer = PKCS1_v1_5.new(priv_key)
-    if (hash == "SHA-512"):
-        digest = SHA512.new()
-    elif (hash == "SHA-384"):
-        digest = SHA384.new()
-    elif (hash == "SHA-256"):
-        digest = SHA256.new()
-    elif (hash == "SHA-1"):
-        digest = SHA.new()
-    else:
-        digest = MD5.new()
+    digest = _get_digest()
     digest.update(message)
     return signer.sign(digest)
 
 def verify(message, signature, pub_key):
     signer = PKCS1_v1_5.new(pub_key)
-    if (hash == "SHA-512"):
-        digest = SHA512.new()
-    elif (hash == "SHA-384"):
-        digest = SHA384.new()
-    elif (hash == "SHA-256"):
-        digest = SHA256.new()
-    elif (hash == "SHA-1"):
-        digest = SHA.new()
-    else:
-        digest = MD5.new()
+    digest = _get_digest()
     digest.update(message)
     return signer.verify(digest, signature)
