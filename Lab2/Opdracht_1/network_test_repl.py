@@ -1,8 +1,14 @@
 # NETWORK TEST
 import network
 from firesocket import FireSocket
+
+LOCAL_SSID  = "EDM-Guest"
+LOCAL_PASSW = "dulosi68"
+# LOCAL_SSID  = "niip_bram"
+# LOCAL_PASSW = "12345678"
+
 wlan = network.WLAN(mode=network.WLAN.STA, power_save=True)
-wlan.connect("niip_bram", auth=(network.WLAN.WPA2, "12345678"))
+wlan.connect(LOCAL_SSID, auth=(network.WLAN.WPA2, LOCAL_PASSW))
 wlan.isconnected()
 
 

@@ -15,6 +15,8 @@ from requests import *
 
 DEBUG = True
 PAYLOAD_ENCRYPTED = False
+USE_DEEPSLEEP = True        # If False, use sleep instead.
+SLEEP_DELAY = 10000         # 1000*60*60*24  For one day (24h)
 
 def file_exists(name):
     try:
@@ -43,7 +45,7 @@ class FireSensor:
     KEY_PRIVATE_DEVICE = "cert/private_key_1.pem"
     KEY_PUBLIC_SERVER  = "cert/public_key_2.pem"
 
-    ALERT_PIN   = "P13"
+    ALERT_PIN   = "P13"     # Our mistake! P13 does not have internal pulls, so an external one is required...
 
     def __init__(self):
         super().__init__()
@@ -170,6 +172,73 @@ class FireSensor:
             self.log("Sensor already OK")
             return True
 
+    def request_config(self):
+        self.log("Attempt to request CONFIG...")
+
+        if not self.reconnect_to_remote():
+            self.on_error("Could not reconnect!")
+            return False
+
+        data = b""
+        signature_json = ujson.dumps(self.signature_json)
+        request = GetRequest(self.REMOTE_ROUTE_CONFIG)
+        request.add_header(Request.CONTENT_TYPE, Request.CONTENT_JSON)
+        request.add_data(signature_json)
+
+        self.log("Send CONFIG request...")
+        if Retrier(lambda: self.sock.send(request.get_payload()), tries=2, delay_ms=350).attempt():
+            # Sent request, now recv settings
+            time.sleep_ms(1000)
+            data = self.sock.recv()
+            self.log("Got CONFIG.")
+        else:
+            self.on_error("Could not sent config request!")
+            return False
+
+        if data:
+            try:
+                response = HttpResponse(data)
+                data = response.getBody()
+                data = ujson.loads(data)
+            except Exception as e:
+                self.on_error("Could not parse config response! " + str(e))
+                return False
+
+            if "msg" in data:
+                if PAYLOAD_ENCRYPTED:
+                    data = self.rsa_decrypt(data["msg"])
+                    data = ujson.loads(data)
+                else:
+                    data = data["msg"]
+
+                self.log("Got from remote: " + str(data))
+
+                if "crit_temp" in data:
+                    self.settings["t_thresh"] = int(data["crit_temp"] * 100.0)
+                    self.log("Set t_thresh={0}".format(self.settings["t_thresh"]))
+                else:
+                    self.settings["t_thresh"] = 6000   # 60.00
+                    self.log("No t_thresh, using default of {0}".format(self.settings["t_thresh"]))
+                if "crit_msg" in data:
+                    self.settings["msg"] = data["crit_msg"]
+                    self.log("Set msg='{0}'".format(self.settings["msg"]))
+
+                if self.connect_sensor():
+                    self.tsense.set_alert_mode(enable_alert=True,
+                                               output_mode=ALERT_OUTPUT_INTERRUPT,
+                                               polarity=ALERT_POLARITY_ALOW,
+                                               selector=ALERT_SELECT_CRIT)
+                    self.tsense.set_alert_boundary_temp(REG_TEMP_BOUNDARY_CRITICAL,
+                                                        self.settings["t_thresh"] / 100.0)
+
+                    self.log("Sensor configured for critical alert.")
+                    self.settings["t_idle"]   = self.get_self_temperature() + 200
+                    self.settings["verified"] = 1
+                    return True
+            else:
+                self.on_error("Invalid config response!")
+        return False
+
     def setup_from_remote(self):
         self.log("Attempt to setup from remote...")
 
@@ -216,67 +285,10 @@ class FireSensor:
                         with open(self.KEY_PUBLIC_SERVER, "w") as key:
                             key.write(self.key_pubremote)
 
-                    if not self.reconnect_to_remote():
-                        self.on_error("Could not reconnect!")
-
-                    request = GetRequest(self.REMOTE_ROUTE_CONFIG)
-                    request.add_header(Request.CONTENT_TYPE, Request.CONTENT_JSON)
-                    request.add_data(signature_json)
-
-                    self.log("Attempt to request CONFIG...")
-                    if Retrier(lambda: self.sock.send(request.get_payload()), tries=2, delay_ms=350).attempt():
-                        # Sent request, now recv settings
-                        time.sleep_ms(500)
-                        data = self.sock.recv()
-                        self.log("Got CONFIG.")
-                    else:
-                        self.on_error("Could not sent config request!")
-                        return False
+                    return self.request_config()
                 else:
                     self.on_error("Could not sent sign-on request!")
                     return False
-
-
-                if data:
-                    try:
-                        response = HttpResponse(data)
-                        data = response.getBody()
-                        data = ujson.loads(data)
-                    except Exception as e:
-                        self.on_error("Could not parse config response! " + str(e))
-                        return False
-
-                    if "msg" in data:
-                        if PAYLOAD_ENCRYPTED:
-                            data = self.rsa_decrypt(data["msg"])
-                            data = ujson.loads(data)
-                        else:
-                            data = data["msg"]
-
-                        self.log("Got from remote: " + str(data))
-
-                        if "crit_temp" in data:
-                            self.settings["t_thresh"] = int(data["crit_temp"] * 100.0)
-                            self.log("Set t_thresh={0}".format(self.settings["t_thresh"]))
-                        else:
-                            self.settings["t_thresh"] = 6000   # 60.00
-                            self.log("No t_thresh, using default of {0}".format(self.settings["t_thresh"]))
-                        if "crit_msg" in data:
-                            self.settings["msg"] = data["crit_msg"]
-                            self.log("Set msg='{0}'".format(self.settings["msg"]))
-
-                        if self.connect_sensor():
-                            self.tsense.set_alert_mode(enable_alert=True,
-                                                       output_mode=ALERT_OUTPUT_INTERRUPT,
-                                                       polarity=ALERT_POLARITY_ALOW,
-                                                       selector=ALERT_SELECT_CRIT)
-                            self.tsense.set_alert_boundary_temp(REG_TEMP_BOUNDARY_CRITICAL,
-                                                                self.settings["t_thresh"] / 100.0)
-
-                            self.log("Sensor configured for critical alert.")
-                            self.settings["t_idle"]   = self.get_self_temperature() + 200
-                            self.settings["verified"] = 1
-                            return True
             else:
                 return False
         else:
@@ -331,7 +343,7 @@ class FireSensor:
         if notify_server:
             # Threshold was hit, notify remote
             self.log("Notifying server...")
-            if not self.connect_to_remote():
+            if not self.reconnect_to_remote():
                 self.on_error("Wanted to notify server, but could not be reached!")
                 return
 
@@ -342,7 +354,7 @@ class FireSensor:
             message = ujson.dumps(message)
 
             signature_json = self.signature_json.copy()
-            signature_json["msg"] = self.rsa_encrypt(message)
+            signature_json["msg"] = self.rsa_encrypt(message) if PAYLOAD_ENCRYPTED else message
 
             payload_json = ujson.dumps(signature_json)
 
@@ -357,14 +369,22 @@ class FireSensor:
             else:
                 self.on_error("Could not inform server of fire!!")
         else:
-            self.log("Temperature below critical value.")
+            self.log("Temperature below critical value ({0} < {1}).".format(measurement, self.settings["t_thresh"]))
             self.go_to_sleep()
 
     def go_to_sleep(self):
         self.log("Going to sleep...")
         self.store_settings()
-        # machine.deepsleep(5000)
-        machine.deepsleep()
+        if USE_DEEPSLEEP:
+            if SLEEP_DELAY == 0:
+                machine.deepsleep()
+            else:
+                machine.deepsleep(SLEEP_DELAY)
+        else:
+            if SLEEP_DELAY == 0:
+                machine.sleep()
+            else:
+                machine.sleep(SLEEP_DELAY)
 
 # Main
 if __name__ == "__main__":
@@ -380,10 +400,24 @@ if __name__ == "__main__":
         pycom.heartbeat(False)
         pycom.wifi_on_boot(False)
 
-        # If first boot, get settings from remote
-        client = FireSensor()
-        client.setup_from_remote()
-        client.check_sensor()
+        if USE_DEEPSLEEP:
+            # For deepsleep, config from scratch and setup deepsleep reset
+            # If first boot, get settings from remote
+            client = FireSensor()
+            client.setup_from_remote()
+            client.check_sensor()
+        else:
+            # For sleep, setup once and go in loop
+            client = FireSensor()
+            client.setup_from_remote()
+
+            start = time.ticks_ms()
+
+            while True:
+                if time.ticks_diff(start, time.ticks_ms()) > SLEEP_DELAY:
+                    client.request_config()  # After timeout, get updated settings from server
+                    start = time.ticks_ms()
+                client.check_sensor()
     else:
         # Recover from deepsleep
         reason = machine.wake_reason()[0]
@@ -399,4 +433,7 @@ if __name__ == "__main__":
             # Take measurement, notify remote and go back to sleep
             client.check_sensor()
         else:
-            print("Wake on ???")
+            print("Wake on deep sleep timeout")
+            client = FireSensor()
+            client.request_config()  # After timeout, get updated settings from server
+            client.check_sensor()

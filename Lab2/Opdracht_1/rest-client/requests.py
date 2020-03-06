@@ -3,6 +3,8 @@ import ssl
 import uselect as select
 import time
 
+DEBUG = False
+
 class Constants:
     """Constants for parsing/splitting"""
     LF   = b"\n"
@@ -33,17 +35,22 @@ class Retrier:
         while True:
             self.triggers += 1
 
-            if self.try_callback():
-                if self.success_callback: self.success_callback()
-                return True
-            else:
-                if self.triggers > self.tries:
-                    # Failed too many times
-                    if self.fail_callback: self.fail_callback()
-                    return False
+            try:
+                if self.try_callback():
+                    if self.success_callback: self.success_callback()
+                    return True
                 else:
-                    print("Wait {0} of {1}...".format(self.triggers, self.tries))
-                    time.sleep_ms(self.delay_ms)
+                    if self.triggers > self.tries:
+                        # Failed too many times
+                        if self.fail_callback: self.fail_callback()
+                        return False
+                    else:
+                        print("Wait {0} of {1}...".format(self.triggers, self.tries))
+                        time.sleep_ms(self.delay_ms)
+            except:
+                if self.fail_callback: self.fail_callback()
+                return False
+
 
 class AddressInfo:
     """Convert URL and port to socket AddressInfo."""
