@@ -16,7 +16,7 @@ import uuid
 from os import path
 
 config = {
-    "crit_temp": 51.23,
+    "crit_temp": 26,
     "crit_msg": "LP0 is on fire"
 }
 
@@ -146,11 +146,12 @@ class Notify(Resource):
                     decrypted = json.loads(decrypted)
                 else:
                     decrypted = cipher
+                    decrypted = json.loads(decrypted)
             except:
                 return {
                     "error": "Could not decrypt message"
                 }
-            print decrypted
+            
             temp = decrypted["temperature"]
            
             notifyFire(sensor_id, temp)
