@@ -11,36 +11,10 @@ from uhashlib import sha256
 import ujson
 
 from mcp9808 import *
-from firesocket import FireSocket
-from http import ReceivedHttpResponse, Request, PostRequest, GetRequest
+from requests import *
 
 DEBUG = True
-
-class Retrier:
-    def __init__(self, try_callback, success_callback=None, fail_callback=None, tries=5, delay_ms=50):
-        super().__init__()
-        self.try_callback     = try_callback
-        self.success_callback = success_callback
-        self.fail_callback    = fail_callback
-        self.triggers         = 0
-        self.tries            = tries
-        self.delay_ms         = delay_ms
-
-    def attempt(self):
-        while True:
-            self.triggers += 1
-
-            if self.try_callback():
-                if self.success_callback: self.success_callback()
-                return True
-            else:
-                if self.triggers == self.tries:
-                    # Failed too many times
-                    if self.fail_callback: self.fail_callback()
-                    return False
-                else:
-                    print("Wait {0} of {1}...".format(self.triggers, self.tries))
-                    time.sleep_ms(self.delay_ms)
+PAYLOAD_ENCRYPTED = False
 
 def file_exists(name):
     try:
@@ -160,7 +134,7 @@ class FireSensor:
             self.wlan = network.WLAN(mode=network.WLAN.STA, power_save=True)
             self.wlan.connect(self.LOCAL_SSID, auth=(network.WLAN.WPA2, self.LOCAL_PASSW))
 
-            if Retrier(self.wlan.isconnected, delay_ms=500).attempt():
+            if Retrier(self.wlan.isconnected, tries=10, delay_ms=500).attempt():
                 # print(wlan.ifconfig())
                 self.log("WLAN connected.")
                 return True
@@ -213,17 +187,22 @@ class FireSensor:
                 if Retrier(lambda: self.sock.send(request.get_payload()), tries=2, delay_ms=350).attempt():
                     # Successfully sent my id and signature, now request settings
                     self.log("Got SIGN-UP.")
-                    time.sleep_ms(500)
+                    time.sleep_ms(1000)
 
                     try:
-                        response = ReceivedHttpResponse(self.sock.recv())
-                        server_pubkey_json = response.getBody()
-                        server_pubkey_json = ujson.loads(server_pubkey_json)
-                        if "public_key" in server_pubkey_json:
-                            self.key_pubremote = server_pubkey_json["public_key"]
-                            self.key_pubremote = ubinascii.a2b_base64(self.key_pubremote)
+                        response = self.sock.recv()
+                        if response:
+                            response = HttpResponse(response)
+                            server_pubkey_json = response.getBody()
+                            server_pubkey_json = ujson.loads(server_pubkey_json)
+                            if "public_key" in server_pubkey_json:
+                                self.key_pubremote = server_pubkey_json["public_key"]
+                                self.key_pubremote = ubinascii.a2b_base64(self.key_pubremote)
+                            else:
+                                self.on_error("Did not receive public key after signing on?")
+                                return False
                         else:
-                            self.on_error("Did not receive public key after signing on?")
+                            self.on_error("Did not receive response after signing on?")
                             return False
                     except Exception as e:
                         self.on_error("Signature response: " + str(e))
@@ -260,7 +239,7 @@ class FireSensor:
 
                 if data:
                     try:
-                        response = ReceivedHttpResponse(data)
+                        response = HttpResponse(data)
                         data = response.getBody()
                         data = ujson.loads(data)
                     except Exception as e:
@@ -268,16 +247,23 @@ class FireSensor:
                         return False
 
                     if "msg" in data:
-                        print(data["msg"])
-                        data = self.rsa_decrypt(data["msg"])
-                        self.log("Got from remote: " + data)
+                        if PAYLOAD_ENCRYPTED:
+                            data = self.rsa_decrypt(data["msg"])
+                            data = ujson.loads(data)
+                        else:
+                            data = data["msg"]
+
+                        self.log("Got from remote: " + str(data))
 
                         if "crit_temp" in data:
                             self.settings["t_thresh"] = int(data["crit_temp"] * 100.0)
+                            self.log("Set t_thresh={0}".format(self.settings["t_thresh"]))
                         else:
                             self.settings["t_thresh"] = 6000   # 60.00
+                            self.log("No t_thresh, using default of {0}".format(self.settings["t_thresh"]))
                         if "crit_msg" in data:
                             self.settings["msg"] = data["crit_msg"]
+                            self.log("Set msg='{0}'".format(self.settings["msg"]))
 
                         if self.connect_sensor():
                             self.tsense.set_alert_mode(enable_alert=True,
@@ -287,7 +273,7 @@ class FireSensor:
                             self.tsense.set_alert_boundary_temp(REG_TEMP_BOUNDARY_CRITICAL,
                                                                 self.settings["t_thresh"] / 100.0)
 
-
+                            self.log("Sensor configured for critical alert.")
                             self.settings["t_idle"]   = self.get_self_temperature() + 200
                             self.settings["verified"] = 1
                             return True
