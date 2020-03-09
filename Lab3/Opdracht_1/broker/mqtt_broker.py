@@ -76,9 +76,9 @@ class ControlPacketType:
             return cls(dup, qos, ret)
 
         def to_bin(self):
-            return Bits.bit(3, self.DUP)    \
-                 | Bits.bit(1, self.QoS, 2) \
-                 | Bits.bit(0, self.RETAIN)
+            return Bits.bit(3, self.dup)    \
+                 | Bits.bit(1, self.qos, 2) \
+                 | Bits.bit(0, self.retain)
 
     class Flags:
         CONNECT     = 0x00  # Reserved
@@ -290,13 +290,18 @@ class Connect(MQTTPacket):
         self._parse_payload()
 
     def _extract_next_field(self, length=0, length_bytes=2):
-        blength      = int.from_bytes(self.payload[0:length_bytes], "big") if not length else length
+        if not length:
+            blength = int.from_bytes(self.payload[0:length_bytes], "big")
+        else:
+            blength = length
+            length_bytes = 0
+
         data         = self.payload[length_bytes:length_bytes+blength]
         self.payload = self.payload[length_bytes+blength:]
         return blength, data
 
     def _parse_payload(self):
-        # To parse the payload for the Connect packet structure, at least 11 bytes are needed (10 +)
+        # To parse the payload for the Connect packet structure, at least 11 bytes are needed (10+)
         if len(self.payload) < 12:
             raise MQTTPacketException("[MQTTPacket::Connect] Malformed packet (too short)! (TODO disconnect)")
 
@@ -334,7 +339,7 @@ class Connect(MQTTPacket):
 
         # User name
         if self.connect_flags.usr_name:
-            _,self.username = self._extract_next_field()
+            _, self.username = self._extract_next_field()
 
             # Password
             if self.connect_flags.passw:
@@ -360,7 +365,7 @@ class MQTTBroker:
     def __init__(self, host=HOST, port=PORT, use_ssl=False):
         super().__init__()
         self.host = host
-        self.port = PORT_SSL if use_ssl else port
+        self.port = self.PORT_SSL if use_ssl else port
 
         self.serverSocket = None
         self.init_socket()
