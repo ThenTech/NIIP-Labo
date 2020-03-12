@@ -576,9 +576,11 @@ def socket_recv(sock, poller=None, buff=4096):
 
     retry = Retrier(poll_sock, tries=10, delay_ms=500)
 
+
     while True:
         if retry.attempt():
             data = sock.recv(buff)
+            print("Trying to receive data: " + data)
             if data:
                 received_data += data
             else:
@@ -621,7 +623,10 @@ class ConnectedClient:
         self.queued_packets = []
 
         # Attributes
-        self.id            = b"CLIENT{0}".format(self.ID_COUNTER)
+        id_str = "CLIENT{0}".format(self.ID_COUNTER)
+        id_bytes = bytearray()
+        id_bytes.extend(map(ord, id_str))
+        self.id            = id_bytes
         self.connect_flags = None
         self.keep_alive_s  = 0
         self.will_topic    = b""
@@ -883,6 +888,8 @@ class MQTTBroker:
             if not raw:
                 raise MQTTDisconnectError("{0} No CONNECT received! Disconnecting...".format(client))
 
+            print("Connect packet received!")
+
             conn = MQTTPacket.from_bytes(raw, expected_type=ControlPacketType.CONNECT)
 
             if not conn:
@@ -909,6 +916,7 @@ class MQTTBroker:
                 client.CONNACK(ReturnCode.ACCEPTED, was_restored=conn_restored or conn_restored2)
 
             # Client is now connected
+            print("Client active? " + client.is_active)
             if client.is_active:
                 pass
                 # TODO Add logic
@@ -994,6 +1002,6 @@ class MQTTClient:
 ##########################################################################################
 
 if __name__ == "__main__":
-    broker = MQTTBroker(host="", port=MQTTBroker.PORT)
+    broker = MQTTBroker(host="10.42.0.1", port=MQTTBroker.PORT)
     # broker = MQTTBroker(host=MQTTBroker.HOST, port=MQTTBroker.PORT)
     broker.start()
