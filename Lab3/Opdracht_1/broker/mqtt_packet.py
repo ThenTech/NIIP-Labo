@@ -1,4 +1,4 @@
-from bits import Bits 
+from bits import Bits
 from mqtt_packet_types import *
 from mqtt_exceptions import *
 
@@ -97,7 +97,7 @@ class MQTTPacket:
 
         if not ControlPacketType.check_flags(self.ptype, self.pflag):
             raise MQTTPacketException("[MQTTPacket::parse] Malformed packet flags for {0}! ({1})"
-                                            .format(ControlPacketType.to_string(self.ptype), self.pflag)) 
+                                            .format(ControlPacketType.to_string(self.ptype), self.pflag))
 
         # Parse length
         self.length, offset = self._get_length_from_bytes(raw[1:])
@@ -331,10 +331,10 @@ class Connect(MQTTPacket):
 class Subscribe(MQTTPacket):
     def __init__(self, raw=b''):
         super().__init__(raw=raw)
-        self.topics = b""
+        self.topics        = b""
         self.requested_qos = b""
         self._parse_payload()
-    
+
     def _check_flags(self):
         return self.pflag == ControlPacketType.Flags.SUBSCRIBE
 
@@ -367,7 +367,7 @@ class Publish(MQTTPacket):
 
         if len(self.payload) == self.length - topic_len - id_len:
             print("[MQTTPacket::Publish] Expected size = {0}  vs  actual = {1}".format(self.length - topic_len - id_len, len(self.payload)))
-            
+
     def to_bin(self):
         data = bytearray()
         data.append(self.ptype | self.pflag)
