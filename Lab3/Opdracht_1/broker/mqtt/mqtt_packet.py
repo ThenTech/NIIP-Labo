@@ -130,6 +130,7 @@ class MQTTPacket:
             ControlPacketType.PUBACK      : MQTTPacket,
             ControlPacketType.PUBREC      : MQTTPacket,
             ControlPacketType.PUBREL      : MQTTPacket,
+            ControlPacketType.PUBCOMP     : MQTTPacket,
 
             ControlPacketType.PINGREQ     : MQTTPacket,
 
@@ -404,8 +405,9 @@ class Connect(MQTTPacket):
             text += style(" conn=", Colours.FG.BLUE)
             text += str(self.connect_flags)
         if attr:
-            text += " " if not self.connect_flags else ", "
-            text += ", ".join(attr)
+            text2 = " " if not self.connect_flags else ", "
+            text2 += ", ".join(attr)
+            text += style(text2, Colours.FG.BLUE)
         text += style(">", Colours.FG.BLUE)
 
         return text
@@ -451,7 +453,7 @@ class Subscribe(MQTTPacket):
         if self.packet_id:
             attr.append("id={0}".format(self.packet_id))
         if self.topics:
-            attr.append("topics={0}".format(list(map(str, self.topics.values()))))
+            attr.append("topics=[{0}]".format(", ".join(map(str, self.topics.values()))))
 
         return style("<{0}{1}>" \
                         .format(self.name(),
@@ -547,8 +549,7 @@ class Publish(MQTTPacket):
             attr.append("msg={0}".format(self.payload if len(self.payload) < 100 else \
                                            "({0} bytes)".format(len(self.payload))))
 
-        return style("<{0}{1}{2}>" \
-                        .format(self.name(),
-                                str(self.pflag),
-                                " " + ", ".join(attr) if attr else ""),
-                    Colours.FG.BLUE)
+        return style("<{0}".format(self.name()), Colours.FG.BLUE) \
+             + str(self.pflag) \
+             + style(" " + ", ".join(attr), Colours.FG.BLUE) if attr else "" \
+             + style(">", Colours.FG.BLUE)

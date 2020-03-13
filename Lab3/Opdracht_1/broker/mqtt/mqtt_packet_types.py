@@ -1,4 +1,5 @@
 from mqtt.bits import Bits
+from mqtt.colours import *
 
 class ControlPacketType:
     _RESERVED1  = 0x00
@@ -74,8 +75,9 @@ class ControlPacketType:
                 self.retain = RETAIN
 
         def __str__(self):
-            return "<dup={0}, QoS={1}, ret={2}>" \
-                .format(self.dup, self.qos, self.retain)
+            return style("<dup={0}, QoS={1}, ret={2}>" \
+                            .format(self.dup, self.qos, self.retain),
+                        Colours.FG.CYAN)
 
         @classmethod
         def from_byte(cls, raw):

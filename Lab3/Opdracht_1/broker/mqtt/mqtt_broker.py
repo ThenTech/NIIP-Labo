@@ -354,7 +354,9 @@ class MQTTBroker:
     PORT     = 1883
     PORT_SSL = 1883
 
-    def __init__(self, host=HOST, port=PORT, use_ssl=False):
+    def __init__(self, host=HOST, port=PORT, use_ssl=False, enable_colours=True):
+        Colours.FORMAT_ESCAPE_SEQ_SUPPORTED = enable_colours
+
         super().__init__()
         self.host = host
         self.port = self.PORT_SSL if use_ssl else port
@@ -500,7 +502,7 @@ class MQTTBroker:
         if not raw:
             raise MQTTDisconnectError("No CONNECT received!")
 
-        self._info("Connect packet received from {0}! Parsing...".format(client))
+        self._info("{0} requested CONNECT.".format(client.__str__(more=True)))
 
         conn = MQTTPacket.from_bytes(raw, expected_type=ControlPacketType.CONNECT)
 
@@ -515,6 +517,7 @@ class MQTTBroker:
             raise MQTTDisconnectError("Unacceptable CONNECT protocol level ({0}).".format(conn.protocol_level))
 
         try:
+            client._log("Received {0}".format(conn))
             client.set_connection(conn)
         except MQTTDisconnectError as e:
             if e.return_code == ReturnCode.ID_REJECTED:
@@ -557,7 +560,7 @@ class MQTTBroker:
             if packet.pflag.qos not in WillQoS.CHECK_VALID:
                 raise MQTTDisconnectError("Invalid PUBLISH QoS ({0})!".format(packet.pflag.qos))
 
-            self._info("PUBLISH to '{0}': '{1}'".format(str(packet.topic, "utf-8"), str(packet.payload, "utf-8")))
+            self._info("PUBLISH to topic '{0}': '{1}'".format(str(packet.topic, "utf-8"), str(packet.payload, "utf-8")))
 
             # Respond to PUBLISH
             client.handle_publish_recv(packet)
@@ -591,9 +594,10 @@ class MQTTBroker:
 
             # Check if any retained packet matches new sub and send it
             with self.retained_lock:
-                for topic, packets in self.retained_packets:
+                for topic, packets in self.retained_packets.items():
                     for sub in client.is_subscribed_to(topic):
-                        client.queue_packet(packet, for_sub=sub)
+                        for p in packets:
+                            client.queue_packet(p, for_sub=sub)
 
         elif packet.ptype == ControlPacketType.UNSUBSCRIBE:
             # UNSUBSCRIBE #####################################################
@@ -662,7 +666,7 @@ class MQTTBroker:
                      + " {0}: {1}".format(client, e))
         except Exception as e:
             self._info(style("Unknown error", Colours.FG.RED) \
-                     + " with {0} {1}:{2}".format(client, type(e).__name__, e))
+                     + " with {0} {1}: {2}".format(client, type(e).__name__, e))
             if HAS_TRACE: self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
         finally:
             self._destroy_client(sock_addr_tuple)
