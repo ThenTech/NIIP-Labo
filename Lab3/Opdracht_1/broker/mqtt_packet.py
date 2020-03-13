@@ -1,6 +1,7 @@
 from bits import Bits
 from mqtt_packet_types import *
 from mqtt_exceptions import *
+from mqtt_subscription import TopicSubscription
 
 
 class MQTTPacket:
@@ -52,19 +53,20 @@ class MQTTPacket:
         length, payload_offset = 0, 0
         mult = 1
 
-        while True:
-            enc = data[payload_offset]
+        if data:
+            while True:
+                enc = data[payload_offset]
 
-            length += (enc & 127) * mult
-            mult *= 128
-            payload_offset += 1
+                length += (enc & 127) * mult
+                mult *= 128
+                payload_offset += 1
 
-            if mult > 2097152:
-                # More than 4 bytes parsed, error
-                raise MQTTPacketException("[MQTTPacket] Malformed remaining length!")
+                if mult > 2097152:
+                    # More than 4 bytes parsed, error
+                    raise MQTTPacketException("[MQTTPacket] Malformed remaining length!")
 
-            if (enc & 128) == 0:
-                break
+                if (enc & 128) == 0:
+                    break
 
         return length, payload_offset
 
@@ -120,12 +122,15 @@ class MQTTPacket:
             ControlPacketType.PUBACK    : MQTTPacket,
             ControlPacketType.PUBREC    : MQTTPacket,
             ControlPacketType.PUBREL    : MQTTPacket,
+
+            ControlPacketType.DISCONNECT: MQTTPacket,
         }
 
         if expected_type and packet_type != expected_type:
             return None
         elif packet_type not in packet_adaptor:
-            raise MQTTPacketException("[MQTTPacket::from_bytes] Unimplemented packet received! ({0})".format(packet_type))
+            raise MQTTPacketException("[MQTTPacket::from_bytes] Unimplemented packet received! ({0})"
+                                        .format(ControlPacketType.to_string(packet_type)))
 
         return packet_adaptor.get(packet_type, MQTTPacket)(raw)
 
@@ -134,9 +139,13 @@ class MQTTPacket:
         packet = cls()
 
         if ptype not in ControlPacketType.CHECK_VALID:
-            raise MQTTPacketException("[MQTTPacket::create] Invalid packet type '{0}'!".format(ptype))
+            raise MQTTPacketException("[MQTTPacket::create] Invalid packet type '{0}'!"
+                                            .format(ControlPacketType.to_string(ptype)))
         if pflags not in ControlPacketType.Flags.CHECK_VALID:
-            raise MQTTPacketException("[MQTTPacket::create] Invalid packet flags '{0}'! (TODO force close connection)".format(pflags))
+            raise MQTTPacketException("[MQTTPacket::create] Invalid packet flags '{0}' (Expected '{1}' for type {2})!"
+                                            .format(pflags,
+                                                    ControlPacketType.__VALID_FLAGS.get(ptype, "?") if ptype != ControlPacketType.PUBLISH else "*",
+                                                    ControlPacketType.to_string(ptype)))
 
         packet.ptype = ptype
         packet.pflag = pflags
@@ -183,15 +192,36 @@ class MQTTPacket:
 
     @staticmethod
     def create_puback(packet_id):
+        packet_id = Bits.pad_bytes(packet_id, 2)
         return MQTTPacket.create(ControlPacketType.PUBACK, ControlPacketType.Flags.PUBACK, packet_id)
 
     @staticmethod
     def create_pubrec(packet_id):
+        packet_id = Bits.pad_bytes(packet_id, 2)
         return MQTTPacket.create(ControlPacketType.PUBREC, ControlPacketType.Flags.PUBREC, packet_id)
 
     @staticmethod
     def create_pubrel(packet_id):
+        packet_id = Bits.pad_bytes(packet_id, 2)
         return MQTTPacket.create(ControlPacketType.PUBREL, ControlPacketType.Flags.PUBREL, packet_id)
+
+    @classmethod
+    def create_suback(cls, packet_id, topics_dict):
+        packet = cls()
+        packet.ptype = ControlPacketType.SUBACK
+        packet.pflag = ControlPacketType.Flags.SUBACK
+
+        content = bytearray()
+        content.extend(Bits.pad_bytes(packet_id, 2))
+
+        for sub in sorted(topics_dict.values()):
+            # Assume success
+            content.append(sub.qos if sub.qos in SUBACKReturnCode.CHECK_VALID else SUBACKReturnCode.FAILURE)
+
+        packet.payload = bytes(content)
+        packet.length  = len(packet.payload)
+
+        return packet
 
     # TODO Other packets
 
@@ -243,16 +273,15 @@ class Connect(MQTTPacket):
 
         def __str__(self):
             flags = []
-            if self.clean:
-                flags.append("clean")
-            if self.will:
-                flags.append("will(QoS={0}, Retain={1})".format(self.will_qos, self.will_ret))
+            flags.append("clean" if self.clean else "keep")
+            flags.append("will(QoS={0}, Retain={1})".format(self.will_qos, self.will_ret) \
+                          if self.will else "no will")
             if self.usr_name:
                 flags.append("user")
             if self.passw:
                 flags.append("pass")
 
-            return "<ConnectFlags: {0}>".format(", ".join(flags))
+            return "<{0}>".format(", ".join(flags))
 
     def __init__(self, raw=b''):
         super().__init__(raw=raw)
@@ -278,8 +307,6 @@ class Connect(MQTTPacket):
             raise MQTTDisconnectError("[MQTTPacket::Connect] Malformed packet (too short)!")
 
         self.protocol_name_length, self.protocol_name = self._extract_next_field()
-
-        print("Protocol name: " + str(self.protocol_name))
 
         if self.protocol_name_length != 4:
             raise MQTTDisconnectError("[MQTTPacket::Connect] Malformed packet, unexpected protocol length '{0}'!"
@@ -331,22 +358,36 @@ class Connect(MQTTPacket):
 class Subscribe(MQTTPacket):
     def __init__(self, raw=b''):
         super().__init__(raw=raw)
-        self.topics        = b""
-        self.requested_qos = b""
+        self.topics = {}  # { topic: TopicSubscription(order, topic, qos) }
         self._parse_payload()
 
     def _check_flags(self):
         return self.pflag == ControlPacketType.Flags.SUBSCRIBE
 
     def _parse_payload(self):
-        #Get length of topic filter
-        topic_len, self.topics = self._extract_next_field()
-        print("Subscribing on topic:")
-        print(str(self.topics, "utf-8"))
+        if len(self.payload) < 1:
+            raise MQTTDisconnectError("[MQTTPacket::Subscribe] Malformed packet (too short)!")
 
-        #Get Requested QOS
-        qos_len, self.requested_qos = self._extract_next_field(1)
+        # Already got packet_id, if there was one
 
+        subscription_order = 0
+
+        # Payload contains one or more topics followed by a QoS
+        while len(self.payload) > 0:
+            # Get topic filter
+            topic_len, topic = self._extract_next_field()
+
+            # Get Requested QOS
+            qos_len, qos = self._extract_next_field(1)
+            qos = int.from_bytes(qos, "big")
+
+            if qos not in WillQoS.CHECK_VALID:
+                raise MQTTDisconnectError("[MQTTPacket::Subscribe] Malformed QoS!")
+
+            # WARNING The order is important, SUBACK needs to send in same order
+            sub = TopicSubscription(subscription_order, str(topic, "utf-8"), qos)
+            subscription_order += 1
+            self.topics[sub.topic] = sub
 
 
 class Publish(MQTTPacket):
@@ -360,13 +401,19 @@ class Publish(MQTTPacket):
     def _parse_payload(self):
         if len(self.payload) < 4:
             raise MQTTDisconnectError("[MQTTPacket::Publish] Malformed packet (too short)!")
+        topic_len, id_len = 0, 0
 
-        topic_len, self.topic     = self._extract_next_field()
-        id_len   , self.packet_id = self._extract_next_field(length=2)  # TODO overrides client_id?
-        # _, self.msg       = self.payload
+        topic_len, self.topic = self._extract_next_field()
+
+        if self.pflag.qos in (WillQoS.QoS_1, WillQoS.QoS_2):
+            # TODO overrides client_id?
+            id_len, self.packet_id = self._extract_next_field(length=2)
+
+        self.msg = self.payload
 
         if len(self.payload) == self.length - topic_len - id_len:
-            print("[MQTTPacket::Publish] Expected size = {0}  vs  actual = {1}".format(self.length - topic_len - id_len, len(self.payload)))
+            print("[MQTTPacket::Publish] Expected size = {0}  vs  actual = {1}"
+                    .format(self.length - topic_len - id_len, len(self.payload)))
 
     def to_bin(self):
         data = bytearray()
@@ -377,7 +424,7 @@ class Publish(MQTTPacket):
         data.extend(self._create_length_bytes(self.length))
         data.extend(self._create_length_bytes(len(self.topic)))
         data.extend(self.topic)
-        data.extend(self.packet_id)
+        data.extend(Bits.pad_bytes(self.packet_id, 2))
 
         if self.msg:
             data.extend(self._create_length_bytes(self.msg))

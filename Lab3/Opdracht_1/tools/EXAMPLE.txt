@@ -1,0 +1,7 @@
+con -V 3 -k 600
+con -V 3 -k 600 -i ItsaMe --no-cleanStart
+
+pub -t "hello/world" -m "Stop hitting yourself!"
+
+sub -t "u/w" -q 0
+sub -t "u/w" -q 0 -t "t/xx" -q 1 -t "a/b" -q 0

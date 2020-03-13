@@ -15,3 +15,13 @@ class Bits:
         if isinstance(raw, bytes):
             return int(raw[0])
         return raw
+
+    @staticmethod
+    def pad_bytes(val, size):
+        assert(size >= 0)
+
+        length = len(val)
+        if length < size:
+            val = bytes(size - length) + val
+
+        return val

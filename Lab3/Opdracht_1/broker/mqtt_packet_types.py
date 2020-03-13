@@ -56,7 +56,7 @@ class ControlPacketType:
 
     @staticmethod
     def to_string(ptype):
-        return ControlPacketType.__STRINGS.get(ptype, "Unknown?")
+        return ControlPacketType.__STRINGS.get(ptype, "Unknown? ({0})".format(ptype))
 
     class PublishFlags:
         def __init__(self, DUP=0, QoS=0, RETAIN=0, from_raw=False):
@@ -147,3 +147,11 @@ class ReturnCode:
     SERVICE_UNAVAILABLE   = 0x03  # Conn refused, server unavailable
     BAD_AUTH              = 0x04  # Conn refused, bad user name or password
     NOT_AUTHORISED        = 0x05  # Conn refused, not authorized
+
+class SUBACKReturnCode:
+    SUCCESS_MAX_QoS_0 = 0x00  # Success - Maximum QoS 0
+    SUCCESS_MAX_QoS_1 = 0x01  # Success - Maximum QoS 1
+    SUCCESS_MAX_QoS_2 = 0x02  # Success - Maximum QoS 2
+    FAILURE           = 0x80  # Failure
+
+    CHECK_VALID = (SUCCESS_MAX_QoS_0, SUCCESS_MAX_QoS_1, SUCCESS_MAX_QoS_2)

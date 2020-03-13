@@ -69,7 +69,7 @@ def socket_recv(sock, poller=None, buff=4096):
             bb = sock.recv(1)
             len_bytes += bb
 
-            if (bb[0] & 128) == 0:
+            if not bb or (bb[0] & 128) == 0:
                 break
 
         length, _ = MQTTPacket._get_length_from_bytes(len_bytes)

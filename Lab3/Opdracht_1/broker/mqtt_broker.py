@@ -20,6 +20,7 @@ DEBUG = True
 #### Server
 
 class ConnectedClient:
+    LIFETIME_MOD = 1.5
     ID_COUNTER = 0
 
     def __init__(self, sock, addr):
@@ -57,7 +58,8 @@ class ConnectedClient:
         return self.addr, self.port
 
     def lifetime_exceeded(self):
-        return (time.time() - self.start_timestamp) > self.keep_alive_s \
+        # [MQTT-3.1.2-24] After 1.5 * keep_alive, disconnect
+        return (time.time() - self.start_timestamp) > self.keep_alive_s * self.LIFETIME_MOD \
             if self.keep_alive_s and self.keep_alive_s > 0 else False
 
     def keep_conn(self):
@@ -69,7 +71,7 @@ class ConnectedClient:
         self.addr, self.port = addr
 
         if self.keep_alive_s > 0:
-            self.sock.settimeout(self.keep_alive_s * 1.5)  # [MQTT-3.1.2-24]
+            self.sock.settimeout(self.keep_alive_s)
 
         self.poller = select.poll()
         self.poller.register(self.sock, select.POLLOUT | select.POLLIN)
@@ -92,14 +94,15 @@ class ConnectedClient:
             self.password      = conn.password
 
             if len(conn.packet_id) > 0:
+                self._log("renamed to '{0}'".format(str(conn.packet_id, "utf-8")))
                 self.id = conn.packet_id
             else:
                 if self.connect_flags.clean == 0:
                     raise MQTTDisconnectError("{0} [MQTTPacket] No id given, but clean was 0!".format(self),
-                                                code=ReturnCode.ID_REJECTED)
+                                              code=ReturnCode.ID_REJECTED)
 
             if self.keep_alive_s > 0:
-                self.sock.settimeout(self.keep_alive_s * 1.5)  # [MQTT-3.1.2-24]
+                self.sock.settimeout(self.keep_alive_s)
 
             self.is_active = True
         else:
@@ -152,7 +155,7 @@ class ConnectedClient:
         data = socket_recv(self.sock, self.poller)
 
         if data:
-            self._log("Received: '{0}'".format(data))
+            self._log("Received: {0}".format(data))
         else:
             self._log("Empty response?")
 
@@ -180,19 +183,25 @@ class ConnectedClient:
             return response.ptype == ptype, response
 
     def CONNACK(self, code=ReturnCode.ACCEPTED, was_restored=False):
-        session_present = 1 if (self.connect_flags.clean == 1 or was_restored) and code == ReturnCode.ACCEPTED else 0
+        session_present = 0
+
+        if ((self.connect_flags and self.connect_flags.clean == 1) or was_restored) \
+          and code == ReturnCode.ACCEPTED:
+            session_present = 1
 
         response = MQTTPacket.create_connack(session_present=session_present,
                                              status_code=code)
         self.send_packet(response)
 
     def RECV_DISCONNECT(self):
+        # TODO [MQTT-3.14.4-3] Discard Will message and don't send on explicit DISCONNECT?
+        # Is this the way?
         self.will_msg = b""
-        # self.disconnect()
 
     def get_will_packet(self, duplicated=0):
-        if not self.connect_flags or (self.connect_flags and not self.connect_flags.will) or not self.will_topic:
-            return None
+        if   not self.connect_flags or (self.connect_flags and not self.connect_flags.will) \
+          or not self.will_topic or not self.will_msg:
+            return None, None
 
         response = MQTTPacket.create_publish(ControlPacketType.PublishFlags(
                                                  duplicated,
@@ -203,20 +212,27 @@ class ConnectedClient:
 
         return self.will_topic, response
 
-    def __str__(self):
-        return "<{0}Client '{1}' at {2}:{3}>".format(
-                    "INACTIVE " if self.is_active else "",
-                    str(self.id, "utf-8"), self.addr, self.port)
-
+    def __str__(self, more=False):
+        if more:
+            return "<Client '{0}' at {1}:{2}{3}>".format(
+                        str(self.id, "utf-8"), self.addr, self.port,
+                        " (INACTIVE)" if not self.is_active else "")
+        else:
+            return "<Client '{0}'{1}>".format(
+                        str(self.id, "utf-8"),
+                        " (INACTIVE)" if not self.is_active else "")
 
     def __repr__(self):
-        return str(self) + "\n" \
+        return "<Client '{0}' at {1}:{2}{3}, " \
+                    .format(str(self.id, "utf-8"), self.addr, self.port,
+                            " (INACTIVE)" if not self.is_active else "") \
              + ("Flags: {0}".format(str(self.connect_flags) if self.connect_flags else "None")) \
              + (", KeepAlive: {0}s".format(self.keep_alive_s)) \
              + (", Will: '{0}' => '{1}'".format(str(self.will_topic, "utf-8"), str(self.will_msg, "utf-8")) \
                     if self.connect_flags and self.connect_flags.will else "") \
              + (", Auth: {0}{1}".format(str(self.username, "utf-8"), ':' + str(self.password, "utf-8") if self.password else "") \
-                 if self.username else "")
+                 if self.username else "") \
+             + ">"
 
 
 class MQTTBroker:
@@ -233,7 +249,10 @@ class MQTTBroker:
         self.clients = {}
 
         self.topic_lock = Threading.new_lock()
-        self.topic_subscriptions = {}  # { topic: [clients] }
+        self.topic_subscriptions = {}
+
+        self.retained_lock = Threading.new_lock()
+        self.retained_packets = {}  # { topic: [packets] }
 
         self.server_sock = None
         self._init_socket()
@@ -255,6 +274,12 @@ class MQTTBroker:
         self.server_sock.listen(5)
         self._info("Created at {0}:{1}".format(self.host, self.port))
 
+    def queue_published_data(self, topic, packet):
+        with self.retained_lock:
+            if not topic in self.retained_packets:
+                self.retained_packets[topic] = []
+            self.retained_packets[topic].append(packet)
+
     def has_client(self, addr):
         with self.client_lock:
             return addr in self.clients
@@ -273,13 +298,14 @@ class MQTTBroker:
                 if cl is not client and (addr == address or cl.id == client.id):
                     # Already one with this id/address
                     if cl.is_active:
-                        # Error already active, close old
+                        # Error: already active, close old
                         kill_old, existing_cl = True, cl
                     else:
                         existing_cl = cl
                     break
 
         if kill_old:
+            self._log("swap_context: {0} was still active, destroying...".format(existing_cl))
             self._destroy_client(existing_cl.address())
 
         if existing_cl:
@@ -289,6 +315,8 @@ class MQTTBroker:
             with self.client_lock:
                 del self.clients[address]
                 self.clients[existing_cl.address()] = existing_cl
+
+            self._info("Context restored for {0}".format(existing_cl))
             return existing_cl, True
 
         return client, False
@@ -302,7 +330,7 @@ class MQTTBroker:
         # TODO Send WILL message?
         topic, packet = self.clients[addr].get_will_packet()
 
-        if packet:
+        if topic and packet:
             with self.topic_lock:
                 if topic in self.topic_subscriptions:
                     for client in self.topic_subscriptions[topic]:
@@ -313,35 +341,46 @@ class MQTTBroker:
             if not self.clients[addr].keep_conn():
                 del self.clients[addr]
 
-    def _connect_client(self):
+    def _destroy_all_clients(self):
+        if not self.clients:
+            return
+
+        with self.client_lock:
+            self._info("Destroying {0} clients...".format(len(self.clients)))
+            for addr in list(self.clients.keys()):
+                self.clients[addr].disconnect()
+                del self.clients[addr]
+
+
+    def _connect_client(self, client):
         client, conn_restored = self._swap_client_with_existing(client)
 
         # Always expect CONNECT
         raw = client.recv_data()
 
         if not raw:
-            raise MQTTDisconnectError("{0} No CONNECT received! Disconnecting...".format(client))
+            raise MQTTDisconnectError("No CONNECT received!")
 
-        self._info("Connect packet received! Parsing...")
+        self._info("Connect packet received from {0}! Parsing...".format(client))
 
         conn = MQTTPacket.from_bytes(raw, expected_type=ControlPacketType.CONNECT)
 
         if not conn:
             # [MQTT-3.1.0-1]
             pt, pf = MQTTPacket._parse_type(raw)
-            raise MQTTDisconnectError("{0} Received packet type '{1}' is not a CONNECT packet!.".format(client, pt))
+            raise MQTTDisconnectError("Received packet type '{0}' is not a CONNECT packet!.".format(pt))
 
         if not conn.is_valid_protocol_level():
             # [MQTT-3.1.2-2]
             client.CONNACK(ReturnCode.UNACCEPTABLE_PROT_LVL)
-            raise MQTTDisconnectError("{0} Unacceptable CONNECT protocol level.".format(client))
+            raise MQTTDisconnectError("Unacceptable CONNECT protocol level ({0}).".format(conn.protocol_level))
 
         try:
             client.set_connection(conn)
         except MQTTDisconnectError as e:
             if e.return_code == ReturnCode.ID_REJECTED:
                 client.CONNACK(e.return_code)
-                raise MQTTDisconnectError("{0} Reject CONNECT client id.".format(client))
+                raise MQTTDisconnectError("Reject CONNECT client id '{0}'.".format(str(conn.packet_id, "utf-8")))
             else:
                 raise
         finally:
@@ -355,7 +394,7 @@ class MQTTBroker:
         raw = client.recv_data()
 
         if not raw:
-            raise MQTTDisconnectError("{0} No packet received! Disconnecting...".format(client))
+            raise MQTTDisconnectError("No packet received!")
 
         is_implemented, err = True, None
         try:
@@ -366,26 +405,27 @@ class MQTTBroker:
             else:
                 raise
         finally:
-            self._info("{0} Received {1} packet.".format(client, ControlPacketType.to_string(mqtt_packet.ptype)))
-            print(str(raw))
-
+            pt, pf = MQTTPacket._parse_type(raw)
+            self._info("{0} Received {1} packet.".format(client, ControlPacketType.to_string(pt)))
             if err:
                 raise err
 
         # Do something with packet
         if packet.ptype == ControlPacketType.CONNECT:
-            raise MQTTDisconnectError("{0} Protocol vialation: got another CONNECT.".format(client))
+            raise MQTTDisconnectError("Protocol violation: got another CONNECT!")
         elif packet.ptype == ControlPacketType.PUBLISH:
             if packet.pflag.qos not in WillQoS.CHECK_VALID:
-                raise MQTTDisconnectError("{0} Invalid PUBLISH QoS.".format(client))
+                raise MQTTDisconnectError("Invalid PUBLISH QoS ({0})!".format(packet.pflag.qos))
+
+            self._info("PUBLISH {{'{0}': '{1}'}}".format(str(packet.topic, "utf-8"), str(packet.msg, "utf-8")))
 
             # Respond to PUBLISH
             if packet.pflag.qos == WillQoS.QoS_0:
                 pass
             elif packet.pflag.qos == WillQoS.QoS_1:
-                client.send_packet(MQTTPacket.create_puback(packet.id))
+                client.send_packet(MQTTPacket.create_puback(packet.packet_id))
             elif packet.pflag.qos == WillQoS.QoS_2:
-                client.send_packet(MQTTPacket.create_pubrec(packet.id))
+                client.send_packet(MQTTPacket.create_pubrec(packet.packet_id))
 
             # Save packet in retained (so it can be sent to future subscribers?)
             if packet.pflag.retain:
@@ -411,23 +451,28 @@ class MQTTBroker:
 
         elif packet.ptype == ControlPacketType.PUBREL:
             if packet.pflag != ControlPacketType.Flags.PUBREL:
-                raise MQTTDisconnectError("{0} Malformed PUBREL packet.".format(client))
+                raise MQTTDisconnectError("Malformed PUBREL packet.")
         elif packet.ptype == ControlPacketType.SUBSCRIBE:
+            client.send_packet(MQTTPacket.create_suback(packet.packet_id, packet.topics))
+            self._info("{0} is SUBSCRIBING to: {1}".format(client, ", ".join(str(t) for t in packet.topics.values())))
+
             # TODO
-            # packet.topics
-            # packet.requested_qos
-            pass
+        elif packet.ptype == ControlPacketType.DISCONNECT:
+            client.RECV_DISCONNECT()
+            raise MQTTDisconnectError("Requested DISCONNECT.")
+
         # elif packet.ptype == ControlPacketType.*:
         #   pass
         else:
-            self._log("{0} No handler for {1} packet.".format(client, ControlPacketType.to_string(mqtt_packet.ptype)))
+            self._log("{0} No handler for {1} packet.".format(client, ControlPacketType.to_string(packet.ptype)))
 
     def _idle_client(self, client):
         if client.has_queued_packets():
             retry = Retrier(client.send_queued, tries=5, delay_ms=1000)
             while not retry.attempt(): pass
         elif client.lifetime_exceeded():
-            raise MQTTDisconnectError("{0} Exceeded its lifetime.".format(client))
+            raise MQTTDisconnectError("{0} Exceeded its lifetime ({1}s)."
+                    .format(client, client.keep_alive_s * client.LIFETIME_MOD))
         else:
             time.sleep(1)
 
@@ -469,6 +514,11 @@ class MQTTBroker:
                 (client_socket, address) = self.server_sock.accept()
                 self._info("Accept client at {0}...".format(address))
                 Threading.new_thread(self._serve_request, (client_socket, address))
+            except KeyboardInterrupt:
+                print("")
+                self._destroy_all_clients()
+                self._info("Server stopped.")
+                break
             except Exception as e:
                 self._info("Socket error: {0}".format(e))
                 break
@@ -477,6 +527,7 @@ class MQTTBroker:
 ##########################################################################################
 
 if __name__ == "__main__":
-    broker = MQTTBroker(host="10.42.0.1", port=MQTTBroker.PORT)
+    broker = MQTTBroker(host="", port=MQTTBroker.PORT)
+    # broker = MQTTBroker(host="10.42.0.1", port=MQTTBroker.PORT)
     # broker = MQTTBroker(host=MQTTBroker.HOST, port=MQTTBroker.PORT)
     broker.start()
