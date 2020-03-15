@@ -551,5 +551,5 @@ class Publish(MQTTPacket):
 
         return style("<{0}".format(self.name()), Colours.FG.BLUE) \
              + str(self.pflag) \
-             + style(" " + ", ".join(attr), Colours.FG.BLUE) if attr else "" \
+             + (style(" " + ", ".join(attr), Colours.FG.BLUE) if attr else "") \
              + style(">", Colours.FG.BLUE)

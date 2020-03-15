@@ -28,8 +28,9 @@ class Bits:
 
     @staticmethod
     def pack(val, size):
-        bb = b""
-        while val > 0:
-            bb = bytes((val & 0xFF,)) + bb
-            val >>= 8
-        return Bits.pad_bytes(bb, size)
+        # bb = b""
+        # while val > 0:
+        #     bb = bytes((val & 0xFF,)) + bb
+        #     val >>= 8
+        # return Bits.pad_bytes(bb, size)
+        return int.to_bytes(val, size, "big")

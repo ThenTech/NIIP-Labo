@@ -643,7 +643,7 @@ class MQTTBroker:
         self._destroy_client(sock_addr_tuple)
         client = self._create_client(sock, sock_addr_tuple)
 
-        self._info("New connection with {0} on port {1}".format(client.addr, client.port))
+        self._info(style("New connection with {0} on port {1}".format(client.addr, client.port), Colours.FG.GREEN))
 
         try:
             client = self._connect_client(client)
@@ -685,7 +685,8 @@ class MQTTBroker:
                 self._info("Server stopped.")
                 break
             except Exception as e:
-                self._info("Socket error: {0}".format(e))
+                self._info(style("Socket error", Colours.FG.RED) + ": {0}".format(e))
+                if HAS_TRACE: self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
                 break
 
 
