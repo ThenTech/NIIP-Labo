@@ -1,4 +1,5 @@
 from mqtt.mqtt_packet_types import WillQoS
+from mqtt.topic_matcher import TopicMatcher
 
 class TopicSubscription:
     def __init__(self, order, topic, qos=0):
@@ -28,8 +29,16 @@ class TopicSubscription:
         return self.order >= other.order
 
     def matches(self, topic):
-        # TODO match topic with self.topic, including wildcards
-        return True
+        print("Subscribed topic: " + self.topic)
+        print("Check topic: " + self.topic)
+
+        # check for complete match
+        if    TopicMatcher.WILDCARD_ANY not in a_filter \
+          and TopicMatcher.WILDCARD_SIG not in a_filter:
+            return self.topic == topic
+        
+        
+        return self.topic == topic
 
     def update_qos(self, qos):
         self.qos = qos if qos in WillQoS.CHECK_VALID else 0

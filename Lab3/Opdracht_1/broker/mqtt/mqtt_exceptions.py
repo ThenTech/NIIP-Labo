@@ -4,6 +4,9 @@ class MQTTPacketException(Exception):
     """General exception."""
     pass
 
+class MQTTTopicException(Exception):
+    pass
+
 class MQTTDisconnectError(Exception):
     """Exception that should always result in disconnect."""
     def __init__(self, *args, **kwargs):
