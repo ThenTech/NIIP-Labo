@@ -29,15 +29,16 @@ class TopicSubscription:
         return self.order >= other.order
 
     def matches(self, topic):
+        topic = str(topic, "utf-8")
         print("Subscribed topic: " + self.topic)
-        print("Check topic: " + self.topic)
+        print("Check topic     : " + topic)
 
         # check for complete match
-        if    TopicMatcher.WILDCARD_ANY not in a_filter \
-          and TopicMatcher.WILDCARD_SIG not in a_filter:
+        if    TopicMatcher.WILDCARD_ANY not in topic \
+          and TopicMatcher.WILDCARD_SIG not in topic:
             return self.topic == topic
-        
-        
+
+
         return self.topic == topic
 
     def update_qos(self, qos):

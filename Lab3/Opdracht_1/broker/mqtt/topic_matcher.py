@@ -1,12 +1,12 @@
-from mqtt.mqtt_exceptions import *
+from mqtt.mqtt_exceptions import MQTTTopicException
 import re   # https://docs.pycom.io/firmwareapi/micropython/ure/
 
 
 class TopicMatcher:
-    WILDCARD_ANY = b'#'
-    WILDCARD_SIG = b'+'
+    WILDCARD_ANY = '#'
+    WILDCARD_SIG = '+'
 
-    
+
     def __init__(self, pattern):
         tokens = self._tokenize(pattern)
         index = 0
@@ -34,16 +34,16 @@ class TopicMatcher:
     def _process_multi(self, token, last):
         if not last:
             raise MQTTTopicException("# wildcard must be at the end of the pattern")
-        
+
         name = token[1:]
-        
+
         return {
             "type": "multi",
             "name": name,
             "piece": "((?:[^/#+]+/)*)",
 		    "last": "((?:[^/#+]+/?)*)"
         }
-    
+
     def _escape_string(self, token):
         return re.sub(r"[^a-zA-Z0-9]+", '', token)
 
@@ -58,7 +58,7 @@ class TopicMatcher:
     def _process_single(self, token, last):
         name = token[1:]
         return {
-            "type": 'single', 
+            "type": 'single',
             "name": name,
             "piece": "([^/#+]+/)",
 		    "last": "([^/#+]+/?)"
@@ -68,5 +68,5 @@ class TopicMatcher:
         return topic.split("/")
 
     def matches(self):
-        if "#" not in a_filter and "+" not in a_filter:
-            return 
+        # TODO ??
+        return False

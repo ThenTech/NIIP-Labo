@@ -87,7 +87,7 @@ class MQTTPacket:
     def _extract_next_field(self, length=0, length_bytes=2):
         """For parsing only"""
         if not length:
-            blength = int.from_bytes(self.payload[0:length_bytes], "big")
+            blength = Bits.unpack(self.payload[0:length_bytes])
         else:
             blength = length
             length_bytes = 0
@@ -170,10 +170,12 @@ class MQTTPacket:
             else:
                 raise MQTTPacketException("[MQTTPacket::create] Invalid payload?")
 
+        if ptype in ControlPacketType.CHECK_HAS_PACKET_ID and len(payload) == 2:
+            # Assume payload is id
+            packet.packet_id = payload
+
         packet.length  = len(payload)
         packet.payload = payload
-
-        # TODO Check payload contents for variable header or length?
 
         return packet
 
@@ -220,6 +222,7 @@ class MQTTPacket:
         packet = cls()
         packet.ptype = ControlPacketType.SUBACK
         packet.pflag = ControlPacketType.Flags.SUBACK
+        packet.packet_id = packet_id
 
         content = bytearray()
 
@@ -341,14 +344,14 @@ class Connect(MQTTPacket):
         if self.protocol_name != MQTTPacket.PROTOCOL_NAME:
             raise MQTTDisconnectError("[MQTTPacket::Connect] Invalid protocol name '{0}'!".format(self.protocol_name))
 
-        self.protocol_level = int.from_bytes(self.payload[0:1], "big")
+        self.protocol_level = Bits.unpack(self.payload[0:1])
         self.connect_flags  = Connect.ConnectFlags.from_bytes(self.payload[1:2])
 
         if not self.connect_flags.is_valid():
             raise MQTTDisconnectError("[MQTTPacket::Connect] Malformed packet flags!")
 
         # Keep alive time, max val is 0xFFFF == 18 hours, 12 minutes and 15 seconds
-        self.keep_alive_s = int.from_bytes(self.payload[2:4], "big")
+        self.keep_alive_s = Bits.unpack(self.payload[2:4])
 
         self.payload = self.payload[4:]
 
@@ -434,7 +437,7 @@ class Subscribe(MQTTPacket):
 
             # Get Requested QOS
             qos_len, qos = self._extract_next_field(1)
-            qos = int.from_bytes(qos, "big")
+            qos = Bits.unpack(qos)
 
             if qos not in WillQoS.CHECK_VALID:
                 raise MQTTDisconnectError("[MQTTPacket::Subscribe] Malformed QoS!")
@@ -541,8 +544,7 @@ class Publish(MQTTPacket):
 
     def __str__(self):
         attr = []
-        if self.packet_id:
-            attr.append("id={0}".format(self.packet_id))
+        attr.append("id={0}".format(self.packet_id or "?"))
         if self.topic:
             attr.append("topic='{0}'".format(str(self.topic, "utf-8")))
         if self.payload:

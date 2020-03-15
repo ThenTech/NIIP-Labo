@@ -71,7 +71,7 @@ class ControlPacketType:
                 self.dup, self.qos, self.retain = DUP, QoS, RETAIN
             else:
                 self.dup    = 0 if QoS == 0 else DUP
-                self.qos    = QoS if QoS in WillQoS.CHECK_VALID else 1
+                self.qos    = QoS if QoS in WillQoS.CHECK_VALID else 0
                 self.retain = RETAIN
 
         def __str__(self):

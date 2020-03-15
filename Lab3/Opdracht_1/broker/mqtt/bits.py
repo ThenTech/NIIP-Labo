@@ -34,3 +34,7 @@ class Bits:
         #     val >>= 8
         # return Bits.pad_bytes(bb, size)
         return int.to_bytes(val, size, "big")
+
+    @staticmethod
+    def unpack(val, endianness="big"):
+        return int.from_bytes(val, endianness)

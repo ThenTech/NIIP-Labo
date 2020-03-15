@@ -48,6 +48,9 @@ class ConnectedClient:
         self.subscription_lock = Threading.new_lock()
         self.subscribed_topics = {}  # { topic: TopicSubscription() }
 
+        self.id_lock    = Threading.new_lock()
+        self.ids_in_use = set()
+
         # Attributes
         self.id            = bytes("CLIENT{0}".format(ConnectedClient.ID_COUNTER), "utf-8")
         self.connect_flags = None
@@ -67,6 +70,9 @@ class ConnectedClient:
         if DEBUG:
             print("{0} {1}".format(self, msg))
 
+    ###########################################################################
+    # Client attributes
+
     def address(self):
         return self.addr, self.port
 
@@ -81,6 +87,29 @@ class ConnectedClient:
     def keep_conn(self):
         """Check if connection params should be kept."""
         return self.connect_flags.clean == 0 if self.connect_flags else False
+
+    def next_id(self):
+        with self.id_lock:
+            if not self.ids_in_use:
+                self.ids_in_use.add(1)
+                return Bits.pack(1, 2)
+            else:
+                next_id = 1
+                while next_id in self.ids_in_use:
+                    next_id += 1
+
+                if next_id > 0xFFFF:
+                    raise MQTTPacketException("Largest id reached!")
+                else:
+                    self.ids_in_use.add(next_id)
+                    return Bits.pack(next_id, 2)
+
+    def release_id(self, idx):
+        with self.id_lock:
+            self.ids_in_use.discard(Bits.unpack(idx))
+
+    ###########################################################################
+    # Socket connection related
 
     def reconnect(self, sock, addr):
         self.sock = sock
@@ -133,32 +162,43 @@ class ConnectedClient:
         with self.queued_packets_lock:
             return len(self.queued_packets) > 0
 
-    def queue_packet(self, packet, for_sub=None):
+    def queue_packet(self, packet, for_sub=None, first=False):
         with self.queued_packets_lock:
             if for_sub:
                 # TODO Add packet to for_sub to comply with QoS
                 # (i.e. don't queue packet more than once if dissalowed)
-                pass
-            self.queued_packets.append(packet)
+                if isinstance(packet.pflag, ControlPacketType.PublishFlags):
+                    packet.pflag.qos = for_sub.qos
+            if first:
+                self.queued_packets.insert(0, packet)
+            else:
+                self.queued_packets.append(packet)
 
     def has_awaited_packets(self):
         with self.awaited_packets_lock:
             return len(self.awaited_packets) > 0
 
-    def await_packet(self, packet):
+    def await_packet(self, packet, first=False):
         with self.awaited_packets_lock:
-            self.awaited_packets.append(packet)
+            if first:
+                self.awaited_packets.insert(0, packet)
+            else:
+                self.awaited_packets.append(packet)
 
     def _get_response(self, ptype, sent_packet):
         """For PUBLISH response exchange to check id"""
         correct, response = self.expect_response(ptype)
+
         if not correct:
-            raise MQTTDisconnectError("{0} Got nothing when expecting {1}!"
-                                        .format(self, ControlPacketType.to_string(ptype)))
+            # raise MQTTDisconnectError
+            self._log("Got nothing when expecting {0}!"
+                                        .format(ControlPacketType.to_string(ptype)))
+            return False
         elif response.packet_id != sent_packet.packet_id:
-            raise MQTTDisconnectError("{0} Got {1} with wrong id! ({2}, expected {3})" \
-                                        .format(self, ControlPacketType.to_string(ptype),
+            self._log("Got {0} with wrong id! ({1}, expected {2})" \
+                                        .format(ControlPacketType.to_string(ptype),
                                                 response.packet_id, sent_packet.packet_id))
+            return False
         else:
             self._log("Got {0}".format(response))
             return True
@@ -166,9 +206,6 @@ class ConnectedClient:
 
     def _handle_publish_sent(self, sent_packet):
         """For PUBLISH response exchange"""
-
-        # TODO Queue ACKs and await responses on next iteraton?
-
         if sent_packet.pflag.qos == WillQoS.QoS_0:
             # Do nothing
             return
@@ -182,69 +219,94 @@ class ConnectedClient:
             #     self._get_response(ControlPacketType.PUBCOMP, sent_packet)
 
     def handle_publish_recv(self, recv_packet):
-        # TODO Queue ACKs and await responses on next iteraton?
-
         if recv_packet.pflag.qos == WillQoS.QoS_0:
             # Do nothing
             return
         elif recv_packet.pflag.qos == WillQoS.QoS_1:
-            self.send_packet(MQTTPacket.create_puback(recv_packet.packet_id))
+            self.queue_packet(MQTTPacket.create_puback(recv_packet.packet_id))
+            # self.send_packet(MQTTPacket.create_puback(recv_packet.packet_id))
         elif recv_packet.pflag.qos == WillQoS.QoS_2:
-            self.send_packet(MQTTPacket.create_pubrec(recv_packet.packet_id))
-            if self._get_response(ControlPacketType.PUBREL, recv_packet):
-                self.send_packet(MQTTPacket.create_pubcomp(recv_packet.packet_id))
+            self.queue_packet(MQTTPacket.create_pubrec(recv_packet.packet_id))
+            # self.send_packet(MQTTPacket.create_pubrec(recv_packet.packet_id))
+            # if self._get_response(ControlPacketType.PUBREL, recv_packet):
+            #     self.send_packet(MQTTPacket.create_pubcomp(recv_packet.packet_id))
 
     def recv_awaited(self):
-        """Wait for ACKs that were not yet received."""
-        # [MQTT-4.4.0-1]
+        """
+        Wait for ACKs that were not yet received.
+        Returns True if nothing was done or no packet was handled.
+        """
+        if self.is_active:
+            # [MQTT-4.4.0-1]
+            with self.awaited_packets_lock:
+                if not self.awaited_packets:
+                    return True
 
-        with self.awaited_packets_lock:
-            if not self.awaited_packets:
-                return
-
-            unrecv = []
-
-            for ptype, spack in self.awaited_packets:
-                if ptype == ControlPacketType.PUBACK:
-                    if self._get_response(ptype, spack):
-                        pass  # OK
-                    else:
-                        self.queue_packet(spack)  # Resend PUBLISH
-                elif ptype == ControlPacketType.PUBREC:
-                    if self._get_response(ptype, spack):
-                        # OK, send next
-                        self.queue_packet(MQTTPacket.create_pubrel(spack.packet_id))
-                        unrecv.append((ControlPacketType.PUBREC, sent_packet))
-                    else:
-                        self.queue_packet(spack)  # Resend PUBLISH
+                ptype, spack = self.awaited_packets.pop(0)
+                if self._get_response(ptype, spack):
+                    # OK
+                    if ptype in (ControlPacketType.PUBACK, ControlPacketType.PUBCOMP):
+                        # After part 3 when sending PUBLISH
+                        # After recv PUBACK or PUBCOMP, exchange done, release id.
+                        self.release_id(spack.packet_id)
+                    elif ptype == ControlPacketType.PUBREC:
+                        # Handshake part 1 when sending PUBLISH
+                        # After recv PUBREC, send PUBREL
+                        self.queue_packet(MQTTPacket.create_pubrel(spack.packet_id), first=True)
+                    elif ptype == ControlPacketType.PUBREL:
+                        # Handshake part 2 when receiving PUBLISH
+                        # After recv PUBREL, send PUBCOMP
+                        self.queue_packet(MQTTPacket.create_pubcomp(spack.packet_id), first=True)
                 else:
-                    unrecv.append((ptype, spack))
+                    # Resend packet we expected ACK for
+                    if spack.ptype == ControlPacketType.PUBLISH:
+                        # [MQTT-3.3.1.-1]
+                        spack.pflag.dup = 1
+                    self.queue_packet(spack, first=True)
+                    self._log("Did not receive proper type and id, resending {0}".format(spack))
+                return False
 
-            self.awaited_packets = unrecv
-
+        return True
 
     def send_queued(self):
         if self.is_active:
-            unsent = []
             with self.queued_packets_lock:
                 if not self.queued_packets:
                     return True
 
-                self._log("Sending {0} queued packages...".format(len(self.queued_packets)))
+                self._log("Sending first of {0} queued packages...".format(len(self.queued_packets)))
 
-                for pack in self.queued_packets:
-                    if not self.send_packet(pack):
-                        self._log("Unable to sent {0}, requeueing...".format(pack))
-                        unsent.append(pack)
-                    else:
-                        # Wait for ACK
-                        if pack.ptype == ControlPacketType.PUBLISH:
-                            self._handle_publish_sent(pack)
-                        # TODO Await other responses that don't need to be handled?
+                pack = self.queued_packets[0]
+
+                if not self.send_packet(pack):
+                    self._log("Unable to sent {0}, requeueing...".format(pack))
+                    return False
+                else:
+                    # Wait for ACK
+                    if pack.ptype == ControlPacketType.PUBLISH:
+                        # Send ACK according to QoS
+                        # Handshake part 0 when sending PUBLISH,
+                        # expect Nothing (Q0), PUBACK (Q1) or PUBREC (Q2)
+                        self._handle_publish_sent(pack)
+                    elif pack.ptype == ControlPacketType.PUBREL:
+                        # After part 2 when sending PUBLISH
+                        # After sending PUBREL, expect PUBCOMP
+                        self.await_packet((ControlPacketType.PUBCOMP, pack), first=True)
+                    elif pack.ptype == ControlPacketType.PUBREC:
+                        # Handshake part 1 when receiving PUBLISH
+                        # After sending PUBREC, expect PUBREL
+                        self.await_packet((ControlPacketType.PUBREL, pack), first=True)
+                    elif pack.ptype == ControlPacketType.PUBCOMP:
+                        # Handshake part 3 when receiving PUBLISH
+                        # After sending PUBCOMP, exchange done, release id.
+                        self.release_id(pack.packet_id)
+
+                    # TODO Await other responses that don't need to be handled?
                     time.sleep(0.1)
-                self.queued_packets = unsent
+                    self.queued_packets.pop(0)
+                    return True
 
-        return len(self.queued_packets) == 0
+        return True
 
     def show_queued(self):
         with self.queued_packets_lock:
@@ -411,9 +473,6 @@ class MQTTBroker:
         self.client_lock = Threading.new_lock()
         self.clients = {}
 
-        # self.topic_lock = Threading.new_lock()
-        # self.topic_subscriptions = {}
-
         self.retained_lock = Threading.new_lock()
         self.retained_packets = {}  # { topic: [packets] }
 
@@ -460,14 +519,17 @@ class MQTTBroker:
                     # TODO Check QoS and do something different?
                     if qos_stop_sending.get(client.id, False):
                         continue
-                    elif client.connect_flags.will_qos in (WillQoS.QoS_0, WillQoS.QoS_2):
+                    elif sub.qos in (WillQoS.QoS_0, WillQoS.QoS_2):
                         qos_stop_sending[client.id] = True
 
+                    # Flags: [MQTT-3.3.1-9], [MQTT-4.3.1-1], [MQTT-4.3.2-1]
                     republish = MQTTPacket.create_publish(
-                        packet.pflag, packet.packet_id,
+                        ControlPacketType.PublishFlags(DUP=0, QoS=sub.qos, RETAIN=0),
+                        client.next_id(),
                         TopicSubscription.filter_wildcards(topic),
                         packet.payload)
-                    client.queue_packet(republish)
+
+                    client.queue_packet(republish, for_sub=sub)
 
     ###########################################################################
     # Client related
@@ -582,12 +644,17 @@ class MQTTBroker:
         return client
 
     def _handle_incoming(self, client):
+        # First check if there were packets awaited, if so handle them first.
+        if not client.recv_awaited():
+            return
+
+        # Only if no packets (ACKs) are awaited, handle new incoming packets.
         raw = client.recv_data()
 
         if not raw:
             raise MQTTDisconnectError("No packet received!")
 
-        is_implemented, err = True, None
+        err = None
         try:
             packet = MQTTPacket.from_bytes(raw)
         except MQTTPacketException as e:
@@ -610,7 +677,7 @@ class MQTTBroker:
                 raise MQTTDisconnectError("Invalid PUBLISH QoS ({0})!".format(packet.pflag.qos))
 
             self._info("PUBLISH to topic '{0}': {1}".format(
-                    str(packet.topic, "utf-8"), 
+                    str(packet.topic, "utf-8"),
                     "'{0}'".format(str(packet.payload, "utf-8")) if packet.payload else "(no payload)" ))
 
             # Respond to PUBLISH
@@ -624,10 +691,6 @@ class MQTTBroker:
             # Send new publish packet to all subscribers of this topic
             self._publish_to_clients(packet.topic, packet)
 
-        elif packet.ptype == ControlPacketType.PUBREL:
-            # PUBREL ##########################################################
-            if packet.pflag != ControlPacketType.Flags.PUBREL:
-                raise MQTTDisconnectError("Malformed PUBREL packet.")
         elif packet.ptype == ControlPacketType.SUBSCRIBE:
             # SUBSCRIBE #######################################################
 
@@ -647,6 +710,9 @@ class MQTTBroker:
             with self.retained_lock:
                 for topic, ret_pack in self.retained_packets.items():
                     for sub in client.is_subscribed_to(topic):
+                        if ret_pack.ptype == ControlPacketType.PUBLISH:
+                            # [MQTT-3.3.1-8]
+                            ret_pack.flag.retain = 1
                         client.queue_packet(ret_pack, for_sub=sub)
 
         elif packet.ptype == ControlPacketType.UNSUBSCRIBE:
@@ -682,7 +748,7 @@ class MQTTBroker:
     def _idle_client(self, client):
         if client.has_queued_packets():
             retry = Retrier(client.send_queued, tries=5, delay_ms=1000)
-            while not retry.attempt(): pass
+            retry.attempt()
         elif client.is_lifetime_exceeded():
             raise MQTTDisconnectError("{0} Exceeded its lifetime ({1}s)."
                     .format(client, client.keep_alive_s * client.LIFETIME_MOD))
@@ -702,12 +768,11 @@ class MQTTBroker:
             self._info("Handling {0}".format(repr(client)))
 
             while client.is_active:
-                # Receive packet from client or idle
+                # Receive packet from client and idle
                 if client.has_data():
                     # Incoming packet
                     self._handle_incoming(client)
-                else:
-                    self._idle_client(client)
+                self._idle_client(client)
         except MQTTPacketException as e:
             self._info(style("Packet error", Colours.FG.RED) \
                      + " with {0}: {1}".format(client, e))
