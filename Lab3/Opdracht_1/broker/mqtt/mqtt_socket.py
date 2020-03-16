@@ -75,7 +75,10 @@ def socket_recv(sock, poller=None, buff=4096):
         length, _ = MQTTPacket._get_length_from_bytes(len_bytes)
         return data + len_bytes, length
 
-    retry = Retrier(poll_sock, tries=10, delay_ms=500)
+    def raise_error(e=None):
+        if e: raise e
+
+    retry = Retrier(poll_sock, tries=10, delay_ms=500, fail_callback=raise_error)
     payload = b""
 
     while True:

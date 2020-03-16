@@ -219,8 +219,8 @@ class ConnectedClient:
     def _handle_publish_sent(self, sent_packet):
         """For PUBLISH response exchange"""
         if sent_packet.pflag.qos == WillQoS.QoS_0:
-            # Do nothing
-            return
+            # Release iod again
+            self.release_id(sent_packet.packet_id)
         elif sent_packet.pflag.qos == WillQoS.QoS_1:
             self.await_packet((ControlPacketType.PUBACK, sent_packet))
             # self._get_response(ControlPacketType.PUBACK, sent_packet)
@@ -233,7 +233,7 @@ class ConnectedClient:
     def handle_publish_recv(self, recv_packet):
         if recv_packet.pflag.qos == WillQoS.QoS_0:
             # Do nothing
-            return
+            pass
         elif recv_packet.pflag.qos == WillQoS.QoS_1:
             self.add_incoming_id(recv_packet.packet_id)
             self.queue_packet(MQTTPacket.create_puback(recv_packet.packet_id))

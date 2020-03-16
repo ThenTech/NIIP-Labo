@@ -22,6 +22,7 @@ class TopicMatcher:
             return True
         elif self.pattern == TopicMatcher.HASH:
             # If subscription is #, match anything
+            self.pattern = topic
             return True
         elif self.pattern[0] == TopicMatcher.DOLL:
             # Starts with $: match exactly (internal use only)
@@ -29,7 +30,9 @@ class TopicMatcher:
         elif  self.pattern[-1] == TopicMatcher.HASH \
           and TopicMatcher.PLUS not in self.pattern:
             # Ends with # and no +: match anything before that
-            return topic.startswith(self.pattern[0:-1])
+            matches = topic.startswith(self.pattern[0:-1])
+            if matches: self.pattern = topic
+            return matches
         elif  TopicMatcher.HASH in self.pattern \
           and self.pattern[-1] != TopicMatcher.HASH:
             # Wildcard # not at end
@@ -54,7 +57,7 @@ class TopicMatcher:
         expanded_pattern.extend(sub_split[i+1:])
         expanded_pattern = TopicMatcher.SEP.join(expanded_pattern)
 
-        # print("{} ==> {} vs {}".format(self.pattern, expanded_pattern, topic))
+        print("{} ==> {} vs {}".format(self.pattern, expanded_pattern, topic))
         self.pattern = expanded_pattern
         return self.matches(topic)
 
