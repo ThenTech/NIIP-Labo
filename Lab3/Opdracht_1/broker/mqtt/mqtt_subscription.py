@@ -32,13 +32,8 @@ class TopicSubscription:
         print("Subscribed topic: " + self.topic)
         print("Check topic: " + self.topic)
 
-        # check for complete match
-        if    TopicMatcher.WILDCARD_ANY not in a_filter \
-          and TopicMatcher.WILDCARD_SIG not in a_filter:
-            return self.topic == topic
-        
-        
-        return self.topic == topic
+        tm = TopicMatcher(self.topic)
+        return (tm.match(topic) is not None)
 
     def update_qos(self, qos):
         self.qos = qos if qos in WillQoS.CHECK_VALID else 0
