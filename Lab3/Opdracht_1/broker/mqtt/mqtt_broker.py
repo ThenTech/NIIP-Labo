@@ -155,9 +155,14 @@ class ConnectedClient:
                 self._log("renamed to '{0}'".format(Bits.bytes_to_str(conn.packet_id)))
                 self.id = conn.packet_id
             else:
+                # [MQTT-3.1.3-7] Zero byte client id requires clean session = 1
                 if self.connect_flags.clean == 0:
+                    # [MQTT-3.1.3-8] If clean was 0 and no id given, CONNACK with ID rejected and disconnect.
                     raise MQTTDisconnectError("{0} [MQTTPacket] No id given, but clean was 0!".format(self),
                                               code=ReturnCode.ID_REJECTED)
+                else:
+                    # [MQTT-3.1.3-6] No id given, but clean == 1, so use internal id
+                    pass
 
             if self.keep_alive_s > 0:
                 self.sock.settimeout(self.keep_alive_s)
@@ -316,7 +321,6 @@ class ConnectedClient:
                         self.release_id(pack.packet_id)
 
                     # TODO Await other responses that don't need to be handled?
-                    time.sleep(0.1)
                     self.queued_packets.pop(0)
                     return True
 
@@ -448,6 +452,8 @@ class ConnectedClient:
           or not self.will_topic or not self.will_msg:
             return None, None
 
+        # [MQTT-3.1.2-16], [MQTT-3.1.2-16] Keep will retain
+
         response = MQTTPacket.create_publish(ControlPacketType.PublishFlags(
                                                  duplicated,
                                                  self.connect_flags.will_qos,
@@ -533,7 +539,10 @@ class MQTTBroker:
     ###########################################################################
     # Sub/Pub related
 
-    def queue_published_data(self, topic, packet):
+    def queue_published_retained(self, topic, packet):
+        # [MQTT-3.1.2-7] Retained messages are kept in broker, not at client level
+        # So they are kept when a client that sent them disconnects.
+
         with self.retained_lock:
             if topic in self.retained_packets:
                 del self.retained_packets[topic]
@@ -552,6 +561,10 @@ class MQTTBroker:
                         continue
                     elif sub.qos in (WillQoS.QoS_0, WillQoS.QoS_2):
                         qos_stop_sending[client.id] = True
+
+                    # [MQTT-3.3.1-9] Even if client is not active right now,
+                    # store incoming packets that match its subscriptions anyway.
+                    # QoS 0 may also be stored.
 
                     # Flags: [MQTT-3.3.1-9], [MQTT-4.3.1-1], [MQTT-4.3.2-1]
                     republish = MQTTPacket.create_publish(
@@ -580,8 +593,8 @@ class MQTTBroker:
 
         with self.client_lock:
             for addr, cl in self.clients.items():
-                if cl is not client and (addr == address or cl.id == client.id):
-                    # Already one with this id/address
+                if cl is not client and cl.id == client.id:
+                    # Already one with this id
                     if cl.is_active:
                         # Error: already active, close old
                         kill_old, existing_cl = True, cl
@@ -594,12 +607,19 @@ class MQTTBroker:
             self._destroy_client(existing_cl.address())
 
         if existing_cl:
-            existing_cl.reconnect(client.sock, address)
-            client.sock = None
-
+            # [MQTT-3.1.2-4] If context with same id still available, clean was 0,
+            # restore this context with the new connection.
             with self.client_lock:
-                del self.clients[address]
-                self.clients[existing_cl.address()] = existing_cl
+                if client.connect_flags.clean == 1:
+                    # [MQTT-3.1.2-6] Session restored, but new one wants to start clean, so destroy old context.
+                    del self.clients[existing_cl.address()]
+                    existing_cl = client
+                else:
+                    # Use old context and destroy new one
+                    existing_cl.reconnect(client.sock, address)
+                    client.sock = None
+                    del self.clients[address]
+                    self.clients[existing_cl.address()] = existing_cl
 
             self._info("Context restored for {0}".format(existing_cl))
             return existing_cl, True
@@ -622,6 +642,8 @@ class MQTTBroker:
 
         with self.client_lock:
             self.clients[addr].disconnect()
+
+            # [MQTT-3.1.2-6] If clean == 1, delete context of client
             if not self.clients[addr].keep_conn():
                 del self.clients[addr]
 
@@ -717,7 +739,7 @@ class MQTTBroker:
             # Save packet in retained (so it can be sent to future subscribers?)
             # TODO How to remember which client already received these (according to QoS)?
             if packet.pflag.retain:
-                self.queue_published_data(packet.topic, packet)
+                self.queue_published_retained(packet.topic, packet)
 
             # Send new publish packet to all subscribers of this topic
             self._publish_to_clients(packet.topic, packet)
@@ -784,6 +806,7 @@ class MQTTBroker:
             raise MQTTDisconnectError("{0} Exceeded its lifetime ({1}s)."
                     .format(client, client.keep_alive_s * client.LIFETIME_MOD))
         else:
+            # Yield thread
             time.sleep(1)
 
     def _serve_request(self, sock, sock_addr_tuple):
