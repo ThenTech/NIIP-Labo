@@ -219,7 +219,7 @@ class ConnectedClient:
     def _handle_publish_sent(self, sent_packet):
         """For PUBLISH response exchange"""
         if sent_packet.pflag.qos == WillQoS.QoS_0:
-            # Release iod again
+            # Release id again
             self.release_id(sent_packet.packet_id)
         elif sent_packet.pflag.qos == WillQoS.QoS_1:
             self.await_packet((ControlPacketType.PUBACK, sent_packet))
