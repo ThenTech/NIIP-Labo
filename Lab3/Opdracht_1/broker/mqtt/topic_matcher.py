@@ -1,101 +1,105 @@
 from mqtt.mqtt_exceptions import MQTTTopicException
-import re   # https://docs.pycom.io/firmwareapi/micropython/ure/
-
 
 class TopicMatcher:
-    WILDCARD_ANY = '#'
-    WILDCARD_SIG = '+'
-
-    def match(self, topic):
-        print("Wildcard: " + self.pattern)
-        print("Topic: " + topic)
-        if topic == self.pattern:
-            return []
-        elif self.pattern is '#':
-            return [topic]
-        
-        res = []
-        t = topic.split('/')
-        w = self.pattern.split('/')
-
-        
-        for i in range(0, len(t)):
-            if w[i] == '+':
-                res.append(t[i])
-            elif w[i] == '#':
-                res.append("/".join(t[1:]))
-                return res 
-            elif w[i] != t[i]:
-                print(w[i] + " is not " + t[i])
-                return None;
-    
-        print(i)
-        if w[i] == '#':
-            i = i+1
-
-        return res if i == len(w)-1 else None
+    HASH = '#'  # Matches anything (multi level)
+    PLUS = '+'  # Matches one thing (single level)
+    DOLL = '$'  # Matches internal topics from broker
+    SEP  = '/'  # Topic hierarchy
 
     def __init__(self, pattern):
-        self.pattern = pattern;
-        # tokens = self._tokenize(pattern)
-        # index = 0
-        # for token in tokens:
-        #     self._process_token(token, index, tokens)
-        #     index = index + 1
+        self.pattern = pattern
 
-    # def _make_regex(self, tokens):
-    #     pass
+    def matches(self, topic):
+        # print("Test: {} == {}".format(self.pattern, topic))
 
-    # def _token_to_regex(self, token, index, tokens):
-    #     last = (index == len(tokens) - 1)
-    #     before_multi = (index == (len(tokens) - 2)) and (tokens[len(tokens)-1]["type"] == "multi")
-    #     return token.last if (last or before_multi) else token.piece
+        # check for complete match
+        if    TopicMatcher.HASH not in self.pattern \
+          and TopicMatcher.PLUS not in self.pattern:
+            # If no wildcards, match exactly
+            return self.pattern == topic
+        elif self.pattern == topic:
+            # If exact match
+            return True
+        elif self.pattern == TopicMatcher.HASH:
+            # If subscription is #, match anything
+            return True
+        elif self.pattern[0] == TopicMatcher.DOLL:
+            # Starts with $: match exactly (internal use only)
+            return self.pattern == topic
+        elif  self.pattern[-1] == TopicMatcher.HASH \
+          and TopicMatcher.PLUS not in self.pattern:
+            # Ends with # and no +: match anything before that
+            return topic.startswith(self.pattern[0:-1])
+        elif  TopicMatcher.HASH in self.pattern \
+          and self.pattern[-1] != TopicMatcher.HASH:
+            # Wildcard # not at end
+            raise MQTTTopicException("Wildcard '{0}' not at end in '{1}'!".format(TopicMatcher.HASH, self.pattern))
 
-    # def _process_token(self, token, index, tokens):
-    #     last = (index == (len(tokens) - 1))
-    #     if token[0] == '+':
-    #         return self._process_single(token, last)
-    #     if token[0] == "#":
-    #         return self._process_multi(token,last)
-    #     else:
-    #         return self._process_raw(token, last)
+        # Else go through hierarchy and fill in wildcards
+        expanded_pattern = []
+        sub_split = self.pattern.split(TopicMatcher.SEP)
+        top_split = topic.split(TopicMatcher.SEP)
 
-    # def _process_multi(self, token, last):
-    #     if not last:
-    #         raise MQTTTopicException("# wildcard must be at the end of the pattern")
-        
-    #     name = token[1:]
-        
-    #     return {
-    #         "type": "multi",
-    #         "name": name,
-    #         "piece": "((?:[^/#+]+/)*)",
-	# 	    "last": "((?:[^/#+]+/?)*)"
-    #     }
-    
-    # def _escape_string(self, token):
-    #     return re.sub(r"[^a-zA-Z0-9]+", '', token)
+        for i, (sub_group, match_group) in enumerate(zip(sub_split, top_split)):
+            if sub_group == match_group:
+                expanded_pattern.append(sub_group)
+            elif sub_group == TopicMatcher.PLUS:
+                expanded_pattern.append(match_group)
+            elif sub_group == TopicMatcher.HASH:
+                expanded_pattern.append(TopicMatcher.SEP.join(top_split[i:]))
+                break
+            else:
+                return False
 
-    # def _process_raw(self, token, last):
-    #     token = self._escape_string(token)
-    #     return {
-    #         "type": "raw",
-    #         "piece": token + "/",
-    #         "last": token + "/?"
-    #     }
+        expanded_pattern.extend(sub_split[i+1:])
+        expanded_pattern = TopicMatcher.SEP.join(expanded_pattern)
 
-    # def _process_single(self, token, last):
-    #     name = token[1:]
-    #     return {
-    #         "type": 'single', 
-    #         "name": name,
-    #         "piece": "([^/#+]+/)",
-	# 	    "last": "([^/#+]+/?)"
-    #     }
+        # print("{} ==> {} vs {}".format(self.pattern, expanded_pattern, topic))
+        self.pattern = expanded_pattern
+        return self.matches(topic)
 
-    # def _tokenize(self, topic):
-    #     return topic.split("/")
+    def filtered(self):
+        """
+        Filter wildcards: call matches() first to get rid of '+',
+        then this will remove trailing '/#'.
+        """
+        filtered_pattern = self.pattern
 
-    # def matches(self):
-    #     if "#" not in a_filter and "+" not in a_filter:
-    #         return 
+        if filtered_pattern[-1] == TopicMatcher.HASH:
+             filtered_pattern = filtered_pattern[0:-1]
+        if filtered_pattern[-1] == TopicMatcher.SEP:
+            filtered_pattern = filtered_pattern[0:-1]
+
+        return filtered_pattern
+
+
+if __name__ == "__main__":
+    def test(sub, topic, result=True):
+        matches = TopicMatcher(sub).matches(topic)
+        print("{}: {} {} {}".format("SUCCESS" if bool(matches) == result else \
+                                    "FAILURE",
+                                    sub, "==" if result else "!=", topic))
+
+    # Tests
+    test("#", "hel/scotty")
+    test("#", "hellow")
+    test("#", "this/+/will/always/match")
+
+    test("hel/#", "hel/scotty")
+    test("hel/#", "hel/rip")
+    test("hel/#", "hel", False)
+
+    test("hel/top", "hel/top")
+    test("hel/top", "hel/top/mat", False)
+    test("hel/top/#", "hel/top/mat")
+
+    test("hel/+/#", "hel/top/mat")
+    test("hel/+/#", "hel/bak/mat")
+    test("hel/+/#", "hel/bak", False)
+    test("hel/+/mat", "hel/bak", False)
+    test("hel/+/mat", "hel/bak/mat")
+    test("hel/+/mat", "hel/ert/mat")
+    test("hel/+/mat", "hel/ert/mat/tes", False)
+    test("hel/+/mat/tes", "hel/ert/mat/tes")
+    test("hel/+/mat/#", "hel/ert/mat/tes")
+    test("hel/+/#", "hel/ert/mat/tes")

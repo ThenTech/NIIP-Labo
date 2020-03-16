@@ -395,7 +395,7 @@ class Connect(MQTTPacket):
         if self.packet_id:
             attr.append("id='{0}'".format(self.packet_id))
         if self.will_topic:
-            attr.append("wtop={0}".format(str(self.will_topic, "utf-8")))
+            attr.append("wtop={0}".format(Bits.bytes_to_str(self.will_topic)))
         if self.will_msg:
             attr.append("wmsg={0}".format(self.will_msg))
         if self.username:
@@ -443,7 +443,7 @@ class Subscribe(MQTTPacket):
                 raise MQTTDisconnectError("[MQTTPacket::Subscribe] Malformed QoS!")
 
             # WARNING The order is important, SUBACK needs to send in same order
-            sub = TopicSubscription(subscription_order, str(topic, "utf-8"), qos)
+            sub = TopicSubscription(subscription_order, Bits.bytes_to_str(topic), qos)
             subscription_order += 1
             self.topics[sub.topic] = sub
 
@@ -481,7 +481,7 @@ class Unsubscribe(MQTTPacket):
         while len(self.payload) > 0:
             # Get topic filter
             topic_len, topic = self._extract_next_field()
-            self.topics.append(str(topic, "utf-8"))
+            self.topics.append(Bits.bytes_to_str(topic))
 
     def to_bin(self):
         # TODO implement for MQTTClient
@@ -546,7 +546,7 @@ class Publish(MQTTPacket):
         attr = []
         attr.append("id={0}".format(self.packet_id or "?"))
         if self.topic:
-            attr.append("topic='{0}'".format(str(self.topic, "utf-8")))
+            attr.append("topic='{0}'".format(Bits.bytes_to_str(self.topic)))
         if self.payload:
             attr.append("msg={0}".format(self.payload if len(self.payload) < 100 else \
                                            "({0} bytes)".format(len(self.payload))))

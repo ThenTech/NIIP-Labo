@@ -70,6 +70,14 @@ class ConnectedClient:
         if DEBUG:
             print("{0} {1}".format(self, msg))
 
+    def _error(self, e=None):
+        if e:
+            self._log(style(type(e).__name__, Colours.FG.RED) + ": {}".format(e))
+            if HAS_TRACE:
+                self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
+        else:
+            self._log(style("Unknown error", Colours.FG.RED))
+
     ###########################################################################
     # Client attributes
 
@@ -103,6 +111,10 @@ class ConnectedClient:
                 else:
                     self.ids_in_use.add(next_id)
                     return Bits.pack(next_id, 2)
+
+    def add_incoming_id(self, idx):
+         with self.id_lock:
+            self.ids_in_use.add(idx)
 
     def release_id(self, idx):
         with self.id_lock:
@@ -140,7 +152,7 @@ class ConnectedClient:
             self.password      = conn.password
 
             if len(conn.packet_id) > 0:
-                self._log("renamed to '{0}'".format(str(conn.packet_id, "utf-8")))
+                self._log("renamed to '{0}'".format(Bits.bytes_to_str(conn.packet_id)))
                 self.id = conn.packet_id
             else:
                 if self.connect_flags.clean == 0:
@@ -223,9 +235,11 @@ class ConnectedClient:
             # Do nothing
             return
         elif recv_packet.pflag.qos == WillQoS.QoS_1:
+            self.add_incoming_id(recv_packet.packet_id)
             self.queue_packet(MQTTPacket.create_puback(recv_packet.packet_id))
             # self.send_packet(MQTTPacket.create_puback(recv_packet.packet_id))
         elif recv_packet.pflag.qos == WillQoS.QoS_2:
+            self.add_incoming_id(recv_packet.packet_id)
             self.queue_packet(MQTTPacket.create_pubrec(recv_packet.packet_id))
             # self.send_packet(MQTTPacket.create_pubrec(recv_packet.packet_id))
             # if self._get_response(ControlPacketType.PUBREL, recv_packet):
@@ -324,9 +338,16 @@ class ConnectedClient:
         """Return list of all subscriptions that match."""
         subs = []
         with self.subscription_lock:
-            for top, sub in self.subscribed_topics.items():
-                if sub.matches(topic):
-                    subs.append(sub)
+            if self.subscribed_topics:
+                matched = list(map(lambda sub: (sub, sub.matches(topic)),
+                                   self.subscribed_topics.values()))
+
+                self._log("Check if any sub {} matches '{}': [{}]".format(
+                    list(map(lambda s: s.topic, self.subscribed_topics.values())),
+                    Bits.bytes_to_str(topic),
+                    ", ".join("{}".format(m) for s, m in matched)))
+
+                subs = [s for s, m in matched if m]
         return subs
 
     def subscribe_to(self, subscription):
@@ -389,7 +410,9 @@ class ConnectedClient:
             # raise MQTTDisconnectError("{0} got disconnected.".format(self))
 
         data  = pack.to_bin()
-        retry = Retrier(lambda: socket_send(self.sock, data, self.poller), tries=5, delay_ms=450)
+        retry = Retrier(lambda: socket_send(self.sock, data, self.poller),
+                        fail_callback=self._error,
+                        tries=5, delay_ms=450)
 
         if retry.attempt():
             self._log("Sent {0}".format(pack))
@@ -429,7 +452,7 @@ class ConnectedClient:
                                                  duplicated,
                                                  self.connect_flags.will_qos,
                                                  self.connect_flags.will_ret),
-                                             self.id,  # TODO Wich id in this case?
+                                             self.next_id(),  # TODO Wich id in this case?
                                              TopicSubscription.filter_wildcards(self.will_topic),
                                              self.will_msg)
 
@@ -438,11 +461,11 @@ class ConnectedClient:
     def __str__(self, more=False):
         if more:
             text = "{0}@{1}:{2}{3}".format(
-                        str(self.id, "utf-8"), self.addr, self.port,
+                        Bits.bytes_to_str(self.id), self.addr, self.port,
                         " (INACTIVE)" if not self.is_active else "")
         else:
             text = "{0}{1}".format(
-                        str(self.id, "utf-8"),
+                        Bits.bytes_to_str(self.id),
                         " (INACTIVE)" if not self.is_active else "")
 
         return style(text, Colours.FG.YELLOW)
@@ -451,9 +474,9 @@ class ConnectedClient:
         return "<" + self.__str__(more=True) + ", " \
              + ("Flags: {0}".format(str(self.connect_flags) if self.connect_flags else "None")) \
              + (", KeepAlive: {0}s".format(self.keep_alive_s)) \
-             + (", Will: '{0}' => '{1}'".format(str(self.will_topic, "utf-8"), str(self.will_msg, "utf-8")) \
+             + (", Will: '{0}' => '{1}'".format(Bits.bytes_to_str(self.will_topic), Bits.bytes_to_str(self.will_msg)) \
                     if self.connect_flags and self.connect_flags.will else "") \
-             + (", Auth: {0}{1}".format(str(self.username, "utf-8"), ':' + str(self.password, "utf-8") if self.password else "") \
+             + (", Auth: {0}{1}".format(Bits.bytes_to_str(self.username), ':' + Bits.bytes_to_str(self.password) if self.password else "") \
                  if self.username else "") \
              + ">"
 
@@ -492,6 +515,14 @@ class MQTTBroker:
         print(style("[BROKER]", Colours.FG.BRIGHT_WHITE) \
             + " {0}".format(msg))
 
+    def _error(self, e=None):
+        if e:
+            self._info(style(type(e).__name__, Colours.FG.RED) + ": {}".format(e))
+            if HAS_TRACE:
+                self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
+        else:
+            self._info(style("Unknown error", Colours.FG.RED))
+
     def _init_socket(self):
         self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_sock.bind((self.host, self.port))
@@ -526,7 +557,7 @@ class MQTTBroker:
                     republish = MQTTPacket.create_publish(
                         ControlPacketType.PublishFlags(DUP=0, QoS=sub.qos, RETAIN=0),
                         client.next_id(),
-                        TopicSubscription.filter_wildcards(topic),
+                        Bits.str_to_bytes(TopicSubscription.filter_wildcards(sub.topic, topic)),
                         packet.payload)
 
                     client.queue_packet(republish, for_sub=sub)
@@ -633,7 +664,7 @@ class MQTTBroker:
         except MQTTDisconnectError as e:
             if e.return_code == ReturnCode.ID_REJECTED:
                 client.CONNACK(e.return_code)
-                raise MQTTDisconnectError("Reject CONNECT client id '{0}'.".format(str(conn.packet_id, "utf-8")))
+                raise MQTTDisconnectError("Reject CONNECT client id '{0}'.".format(Bits.bytes_to_str(conn.packet_id)))
             else:
                 raise
         finally:
@@ -677,8 +708,8 @@ class MQTTBroker:
                 raise MQTTDisconnectError("Invalid PUBLISH QoS ({0})!".format(packet.pflag.qos))
 
             self._info("PUBLISH to topic '{0}': {1}".format(
-                    str(packet.topic, "utf-8"),
-                    "'{0}'".format(str(packet.payload, "utf-8")) if packet.payload else "(no payload)" ))
+                    Bits.bytes_to_str(packet.topic),
+                    "'{0}'".format(Bits.bytes_to_str(packet.payload)) if packet.payload else "(no payload)" ))
 
             # Respond to PUBLISH
             client.handle_publish_recv(packet)
@@ -747,7 +778,7 @@ class MQTTBroker:
 
     def _idle_client(self, client):
         if client.has_queued_packets():
-            retry = Retrier(client.send_queued, tries=5, delay_ms=1000)
+            retry = Retrier(client.send_queued, fail_callback=self._error, tries=5, delay_ms=1000)
             retry.attempt()
         elif client.is_lifetime_exceeded():
             raise MQTTDisconnectError("{0} Exceeded its lifetime ({1}s)."

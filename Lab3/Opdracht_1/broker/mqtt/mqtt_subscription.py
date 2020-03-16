@@ -1,3 +1,4 @@
+from mqtt.bits import Bits
 from mqtt.mqtt_packet_types import WillQoS
 from mqtt.topic_matcher import TopicMatcher
 
@@ -29,17 +30,17 @@ class TopicSubscription:
         return self.order >= other.order
 
     def matches(self, topic):
-        topic = str(topic, "utf-8")
-        print("Subscribed topic: " + self.topic)
-        print("Check topic     : " + topic)
-
-        tm = TopicMatcher(self.topic)
-        return (tm.match(topic) is not None)
+        topic = Bits.bytes_to_str(topic)
+        # print("Subscribed topic: " + self.topic)
+        # print("Check topic     : " + topic)
+        return TopicMatcher(self.topic).matches(topic)
 
     def update_qos(self, qos):
         self.qos = qos if qos in WillQoS.CHECK_VALID else 0
 
     @staticmethod
-    def filter_wildcards(topic_name):
-        # TODO
-        return topic_name
+    def filter_wildcards(sub_topic, pub_topic=b""):
+        tm = TopicMatcher(sub_topic)
+        if pub_topic:
+            tm.matches(Bits.bytes_to_str(pub_topic))
+        return tm.filtered()

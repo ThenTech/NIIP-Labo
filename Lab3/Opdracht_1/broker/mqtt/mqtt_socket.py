@@ -21,7 +21,7 @@ class Retrier:
         self.fail_callback    = fail_callback
         self.triggers         = 0
         self.tries            = tries
-        self.delay_ms         = delay_ms
+        self.delay_ms         = delay_ms / 1000.0
 
     def attempt(self):
         self.triggers = 0
@@ -41,9 +41,9 @@ class Retrier:
                     else:
                         if DEBUG:
                             print("Retry: Wait {0} of {1}...".format(self.triggers, self.tries))
-                        time.sleep_ms(self.delay_ms)
-            except:
-                if self.fail_callback: self.fail_callback()
+                        time.sleep(self.delay_ms)
+            except Exception as e:
+                if self.fail_callback: self.fail_callback(e)
                 return False
 
 

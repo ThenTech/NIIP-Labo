@@ -38,3 +38,16 @@ class Bits:
     @staticmethod
     def unpack(val, endianness="big"):
         return int.from_bytes(val, endianness)
+
+    @staticmethod
+    def str_to_bytes(string):
+        return bytes(string, "utf-8") if not isinstance(string, bytes) \
+          else string
+
+    @staticmethod
+    def bytes_to_str(bytestr):
+        try:
+            return str(bytestr, "utf-8") if not isinstance(bytestr, str) \
+              else bytestr
+        except:
+            return bytestr
