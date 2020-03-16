@@ -92,9 +92,13 @@ class MQTTPacket:
             blength = length
             length_bytes = 0
 
-        data         = self.payload[length_bytes:length_bytes+blength]
-        self.payload = self.payload[length_bytes+blength:]
-        return blength, data
+        try:
+            data         = self.payload[length_bytes:length_bytes+blength]
+            self.payload = self.payload[length_bytes+blength:]
+            return blength, data
+        except:
+            return 0, None
+        
 
     def _includes_packet_identifier(self):
         # PUBLISH also contains id, but after topic, so not until payload itself
@@ -104,8 +108,9 @@ class MQTTPacket:
         # Get type
         self.ptype, self.pflag = self._parse_type(raw)
 
+        # If the flags are malformed, disconnect the client
         if not ControlPacketType.check_flags(self.ptype, self.pflag):
-            raise MQTTPacketException("[MQTTPacket::parse] Malformed packet flags for {0}! ({1})"
+            raise MQTTDisconnectError("[MQTTPacket::parse] Malformed packet flags for {0}! ({1})"
                                             .format(self.name(), self.pflag))
 
         # Parse length
@@ -367,13 +372,43 @@ class Connect(MQTTPacket):
             # Will message
             _, self.will_msg = self._extract_next_field()
 
+            if self.will_topic == None or self.will_topic == b"" \
+                or self.will_msg == None or self.will_msg == b"":
+                raise  MQTTDisconnectError("[MQTTPacket::Connect] No will topic or message received, while flag was 1 (MQTT-3.1.2-9)")
+            
+            if self.connect_flags.will_qos == 3:
+                raise MQTTDisconnectError("[MQTTPacket::Connect] Will flag is set to 1, so Will QoS can't be 3 (MQTT-3.1.2-14)")
+
+        # Check MQTT-3.1.2-13 and -15
+        if not self.connect_flags.will:
+            if self.connect_flags.will_qos != 0:
+                raise MQTTDisconnectError("[MQTTPacket::Connect] Will flag is set to 0, but the Will QoS is not equal to 0 (MQTT-3.1.2-13)")
+            if self.connect_flags.will_ret != 0:
+                raise MQTTDisconnectError("[MQTTPacket::Connect] Will flag is set to 0, but the Will Retain is not equal to 0 (MQTT-3.1.2-15)")
+
         # User name
         if self.connect_flags.usr_name:
             _, self.username = self._extract_next_field()
+            # If username not present 
+            if self.username == None or self.username == b"":
+                raise MQTTDisconnectError("[MQTTPacket::Connect] Username flag is set to 1, but no username given (MQTT-3.1.2-19)")
 
             # Password
             if self.connect_flags.passw:
                 _, self.password = self._extract_next_field()
+                if self.password == None or self.password == b"":
+                    raise MQTTDisconnectError("[MQTTPacket::Connect] Password flag set to 1, but no password given (MQTT-3.1.2-21)") 
+            if not self.connect_flags.passw:
+                _, pw = self._extract_next_field()
+                if pw is not None:
+                    raise MQTTDisconnectError("[MQTTPacket::Connect] Password flag set to 0, but password given (MQTT-3.1.2-20)")
+
+        if not self.connect_flags.usr_name:
+            _, un = self._extract_next_field()
+            if un != None and self.username != b"":
+                raise MQTTDisconnectError("[MQTTPacket::Connect] Username given while flag was set to 0 (MQTT-3.1.2-18)")
+            if self.connect_flags.passw:
+                raise MQTTDisconnectError("[MQTTPacket::Connect] Username flag is 0, but password flag is 1 (MQTT-3.1.2-22)")
 
     def is_valid_protocol_level(self):
         """TODO If False, respond with CONNACK 0x01 : Unacceptable protocol level and disconnect."""
@@ -442,6 +477,10 @@ class Subscribe(MQTTPacket):
             if qos not in WillQoS.CHECK_VALID:
                 raise MQTTDisconnectError("[MQTTPacket::Subscribe] Malformed QoS!")
 
+            # If qos > 0 and (no packet ID || packet id == 0): No can do hombre
+            if self.pflag.qos > 0 and (self.packet_id == b""):
+                raise MQTTPacketException("QoS level > 0, but no Packet ID given (MQTT-2.3.1-1)")
+
             # WARNING The order is important, SUBACK needs to send in same order
             sub = TopicSubscription(subscription_order, Bits.bytes_to_str(topic), qos)
             subscription_order += 1
@@ -475,7 +514,9 @@ class Unsubscribe(MQTTPacket):
         if len(self.payload) < 3:
             raise MQTTDisconnectError("[MQTTPacket::Unsubscribe] Malformed packet (too short)!")
 
-        # Already got packet_id, if there was one
+        # If qos > 0 and (no packet ID || packet id == 0): No can do hombre
+        if self.pflag.qos > 0 and (self.packet_id == b""):
+            raise MQTTPacketException("QoS level > 0, but no Packet ID given (MQTT-2.3.1-1)")
 
         # Payload contains one or more topics followed by a QoS
         while len(self.payload) > 0:
@@ -517,6 +558,13 @@ class Publish(MQTTPacket):
         if self.pflag.qos in (WillQoS.QoS_1, WillQoS.QoS_2):
             # TODO overrides client_id?
             id_len, self.packet_id = self._extract_next_field(length=2)
+
+        # If qos > 0 and (no packet ID || packet id == 0): No can do hombre
+        if self.pflag.qos > 0 and (self.packet_id == b""):
+            raise MQTTPacketException("QoS level > 0, but no Packet ID given (MQTT-2.3.1-1)")
+        # If qos == 0 and packet_id given: Certainly no go, compadre
+        if self.pflag.qos == 0 and self.packet_id != b"":
+            raise MQTTPacketException("QOS level == 0, but there is a Packed ID given (MQTT-2.3.1-5")
 
         if len(self.payload) == self.length - topic_len - id_len:
             print("[MQTTPacket::Publish] Expected size = {0}  vs  actual = {1}"
