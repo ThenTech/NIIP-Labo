@@ -53,7 +53,7 @@ class MQTTPacket:
         len_bytes = bytearray()
 
         while length > 0:
-            enc, length = length % 128, length / 128
+            enc, length = length % 128, length // 128
 
             if length:
                 enc |= 128
@@ -533,7 +533,9 @@ class Unsubscribe(MQTTPacket):
             raise MQTTDisconnectError("[MQTTPacket::Unsubscribe] Malformed packet (too short)!")
 
         # [MQTT-2.3.1-1] If qos > 0 then packet_id (!= 0) is required
-        if self.pflag.qos > 0 and (not self.packet_id or (self.packet_id and Bits.unpack(self.packet_id) == 0)):
+        # `self.pflag.qos > 0 and`  =>  Cannot check flags here, no flags!
+        # Unsubscribe always has packet id!
+        if (not self.packet_id or (self.packet_id and Bits.unpack(self.packet_id) == 0)):
             raise MQTTPacketException("[MQTTPacket::Unsubscribe] QoS level > 0, but no or zeroed Packet ID given!")
 
         # Payload contains one or more topics followed by a QoS

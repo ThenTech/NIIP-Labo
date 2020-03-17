@@ -788,6 +788,7 @@ class MQTTBroker:
         elif packet.ptype == ControlPacketType.UNSUBSCRIBE:
             # UNSUBSCRIBE #####################################################
 
+            # [MQTT-3.10.4-4], [MQTT-3.10.4-5]
             client.send_packet(MQTTPacket.create_unsuback(packet.packet_id))
 
             client._log("is UNSUBSCRIBING from: {0}".format(", ".join(packet.topics)))
