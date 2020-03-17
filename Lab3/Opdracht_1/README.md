@@ -30,3 +30,14 @@ broker.start()
 #### Example Publisher output
 
 ![Publisher](doc/pub.png)
+
+
+
+#### Topic matching
+
+To test topic matching, run the topic_matcher from inside the `broker` directory as:
+```sh
+python3 -m mqtt.topic_matcher
+```
+
+Optionally add more test rules to the file.

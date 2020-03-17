@@ -480,6 +480,13 @@ class Subscribe(MQTTPacket):
             # Get topic filter
             topic_len, topic = self._extract_next_field()
 
+            if topic_len < 1:
+                # [MQTT-4.7.3-1] Topic needs to be at least 1 byte long
+                raise MQTTPacketException("[MQTTPacket::Subscribe] Topic must be at least 1 character long!")
+            elif b"\x00" in topic:
+                # [MQTT-4.7.3-2] Topic cannot contain null characters
+                raise MQTTPacketException("[MQTTPacket::Subscribe] Topic may not contain null characters!")
+
             # Get Requested QOS
             qos_len, qos = self._extract_next_field(1)
             qos = Bits.unpack(qos)
@@ -533,6 +540,14 @@ class Unsubscribe(MQTTPacket):
         while len(self.payload) > 0:
             # Get topic filter
             topic_len, topic = self._extract_next_field()
+
+            if topic_len < 1:
+                # [MQTT-4.7.3-1] Topic needs to be at least 1 byte long
+                raise MQTTPacketException("[MQTTPacket::Unsubscribe] Topic must be at least 1 character long!")
+            elif b"\x00" in topic:
+                # [MQTT-4.7.3-2] Topic cannot contain null characters
+                raise MQTTPacketException("[MQTTPacket::Unsubscribe] Topic may not contain null characters!")
+
             self.topics.append(Bits.bytes_to_str(topic))
 
     def to_bin(self):
@@ -566,10 +581,15 @@ class Publish(MQTTPacket):
 
         topic_len, self.topic = self._extract_next_field()
 
+        if topic_len < 1:
+            # [MQTT-4.7.3-1] Topic needs to be at least 1 byte long
+            raise MQTTPacketException("[MQTTPacket::Publish] Topic must be at least 1 character long!")
+
         # [MQTT-3.3.2-2] Topic cannot contain wildcards
+        # [MQTT-4.7.3-2] Topic cannot contain null characters
         top = Bits.bytes_to_str(self.topic)
-        if TopicMatcher.HASH in top or TopicMatcher.PLUS in top:
-            raise MQTTPacketException("[MQTTPacket::Publish] Topic may not contain wildcards!")
+        if TopicMatcher.HASH in top or TopicMatcher.PLUS in top or b'\x00' in self.topic:
+            raise MQTTPacketException("[MQTTPacket::Publish] Topic may not contain wildcards or null characters!")
 
         if self.pflag.qos in (WillQoS.QoS_1, WillQoS.QoS_2):
             # TODO overrides client_id?

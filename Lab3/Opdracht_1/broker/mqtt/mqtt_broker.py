@@ -172,6 +172,19 @@ class ConnectedClient:
         else:
             self._log("No conn params?")
 
+    def merge_params_from_other(self, other):
+        if isinstance(other, ConnectedClient):
+            self.connect_flags = other.connect_flags
+            self.keep_alive_s  = other.keep_alive_s
+            self.will_topic    = other.will_topic
+            self.will_msg      = other.will_msg
+            self.username      = other.username
+            self.password      = other.password
+
+            if self.keep_alive_s > 0 and self.sock:
+                self.sock.settimeout(self.keep_alive_s)
+            self.reset_lifetime()
+
     ###########################################################################
     # Packet backlog related
 
@@ -617,6 +630,10 @@ class MQTTBroker:
                 else:
                     # Use old context and destroy new one
                     existing_cl.reconnect(client.sock, address)
+
+                    # TODO overwrite with new params?
+                    # existing_cl.merge_params_from_other(client)
+
                     client.sock = None
                     del self.clients[address]
                     self.clients[existing_cl.address()] = existing_cl
