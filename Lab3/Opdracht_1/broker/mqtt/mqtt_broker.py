@@ -92,7 +92,7 @@ class ConnectedClient:
         return (time.time() - self.start_timestamp) > self.keep_alive_s * self.LIFETIME_MOD \
             if self.keep_alive_s and self.keep_alive_s > 0 else False
 
-    def keep_conn(self):
+    def keep_context(self):
         """Check if connection params should be kept."""
         return self.connect_flags.clean == 0 if self.connect_flags else False
 
@@ -365,6 +365,10 @@ class ConnectedClient:
                     ", ".join("{}".format(m) for s, m in matched)))
 
                 subs = [s for s, m in matched if m]
+
+                if subs:
+                    # Use only the match with the largest QoS
+                    subs = [max(subs, key=lambda su: su.qos)]
         return subs
 
     def subscribe_to(self, subscription):
@@ -455,9 +459,8 @@ class ConnectedClient:
                                              status_code=code)
         self.send_packet(response)
 
-    def RECV_DISCONNECT(self):
-        # TODO [MQTT-3.14.4-3] Discard Will message and don't send on explicit DISCONNECT?
-        # Is this the way?
+    def requested_disconnect(self):
+        # [MQTT-3.1.2-10], [MQTT-3.14.4-3] Discard Will message and don't send on explicit DISCONNECT
         self.will_msg = b""
 
     def get_will_packet(self, duplicated=0):
@@ -465,14 +468,15 @@ class ConnectedClient:
           or not self.will_topic or not self.will_msg:
             return None, None
 
+        # Will message can be empty, but receiving disconnect deletes the message (clean disconnect).
         # [MQTT-3.1.2-16], [MQTT-3.1.2-16] Keep will retain
 
         response = MQTTPacket.create_publish(ControlPacketType.PublishFlags(
                                                  duplicated,
                                                  self.connect_flags.will_qos,
                                                  self.connect_flags.will_ret),
-                                             self.next_id(),  # TODO Wich id in this case?
-                                             TopicSubscription.filter_wildcards(self.will_topic),
+                                             self.next_id(),  # Id is irrelevant, since tis client is disconnecting
+                                             self.will_topic, # Unfiltered, since it needs to be matched with a subscription later
                                              self.will_msg)
 
         return self.will_topic, response
@@ -558,16 +562,24 @@ class MQTTBroker:
 
         with self.retained_lock:
             if topic in self.retained_packets:
+                self._info(style("Packet for topic '{0}' was removed from retained!".format(Bits.bytes_to_str(topic)),
+                                 Colours.BG.YELLOW, Colours.FG.BLACK))
                 del self.retained_packets[topic]
             elif packet.payload:
                 # [MQTT-3.3.1-11]
+                self._info(style("Packet for topic '{0}' was retained!".format(Bits.bytes_to_str(topic)),
+                                 Colours.BG.YELLOW, Colours.FG.BLACK))
                 self.retained_packets[topic] = packet
 
-    def _publish_to_clients(self, topic, packet):
+    def _publish_to_clients(self, topic, packet, not_to_source=None):
         qos_stop_sending = {}
 
         with self.client_lock:
             for client in self.clients.values():
+                if not_to_source and client.id == not_to_source.id:
+                    # Do not publish to source, if will message
+                    continue
+
                 for sub in client.is_subscribed_to(topic):
                     # TODO Check QoS and do something different?
                     if qos_stop_sending.get(client.id, False):
@@ -651,17 +663,27 @@ class MQTTBroker:
                    self.clients[addr],
                    len(list(filter(lambda c: c.is_active, self.clients.values()))) - 1))
 
-        # TODO Send WILL message?
+        # [MQTT-3.1.2-8] Send WILL message
         topic, packet = self.clients[addr].get_will_packet()
 
         if topic and packet:
-            self._publish_to_clients(topic, packet)
+            self._info("{0} PUBLISHING last will to topic '{1}': {2}".format(
+                    self.clients[addr],
+                    Bits.bytes_to_str(packet.topic),
+                    "'{0}'".format(Bits.bytes_to_str(packet.payload)) if packet.payload else "(no payload)" ))
+
+            if packet.pflag.retain:
+                self.queue_published_retained(topic, packet)
+            self._publish_to_clients(topic, packet, not_to_source=self.clients[addr])
+
+            # [MQTT-3.1.2-10] Delete will msg
+            self.clients[addr].requested_disconnect()
 
         with self.client_lock:
             self.clients[addr].disconnect()
 
             # [MQTT-3.1.2-6] If clean == 1, delete context of client
-            if not self.clients[addr].keep_conn():
+            if not self.clients[addr].keep_context():
                 del self.clients[addr]
 
     def _destroy_all_clients(self):
@@ -778,12 +800,16 @@ class MQTTBroker:
 
             # Check if any retained packet matches new sub and send it
             with self.retained_lock:
-                for topic, ret_pack in self.retained_packets.items():
-                    for sub in client.is_subscribed_to(topic):
-                        if ret_pack.ptype == ControlPacketType.PUBLISH:
-                            # [MQTT-3.3.1-8]
-                            ret_pack.flag.retain = 1
-                        client.queue_packet(ret_pack, for_sub=sub)
+                if self.retained_packets:
+                    client._log("Checking for retained packet matches...")
+                    for topic, ret_pack in self.retained_packets.items():
+                        for sub in client.is_subscribed_to(topic):
+                            self._info(style("RETAINED", Colours.BG.YELLOW, Colours.FG.BLACK) \
+                                     + " match: {0}".format(ret_pack))
+                            if ret_pack.ptype == ControlPacketType.PUBLISH:
+                                # [MQTT-3.3.1-8]
+                                ret_pack.pflag.retain = 1
+                            client.queue_packet(ret_pack, for_sub=sub)
 
         elif packet.ptype == ControlPacketType.UNSUBSCRIBE:
             # UNSUBSCRIBE #####################################################
@@ -808,7 +834,7 @@ class MQTTBroker:
 
         elif packet.ptype == ControlPacketType.DISCONNECT:
             # DISCONNECT ######################################################
-            client.RECV_DISCONNECT()
+            client.requested_disconnect()
             raise MQTTDisconnectError("Requested DISCONNECT.")
 
         # elif packet.ptype == ControlPacketType.*:

@@ -437,9 +437,9 @@ class Connect(MQTTPacket):
         if self.keep_alive_s:
             attr.append("KeepAlive={0}s".format(self.keep_alive_s))
         if self.packet_id:
-            attr.append("id='{0}'".format(self.packet_id))
+            attr.append("id='{0}'".format(Bits.bytes_to_str(self.packet_id)))
         if self.will_topic:
-            attr.append("wtop={0}".format(Bits.bytes_to_str(self.will_topic)))
+            attr.append("wtop='{0}'".format(Bits.bytes_to_str(self.will_topic)))
         if self.will_msg:
             attr.append("wmsg={0}".format(self.will_msg))
         if self.username:
