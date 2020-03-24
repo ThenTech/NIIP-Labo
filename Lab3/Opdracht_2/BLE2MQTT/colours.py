@@ -53,4 +53,4 @@ def style(text, *args):
         return text
 
 # Usage:
-print(style("Hello World!", Colours.BG.WHITE, Colours.FG.RED))
+# print(style("Hello World!", Colours.BG.WHITE, Colours.FG.RED))

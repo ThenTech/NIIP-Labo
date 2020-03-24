@@ -10,18 +10,20 @@ def find_addr(device_name):
     for bdaddr, name in nearby_devices:
         if name == device_name:
             found_addr = bdaddr
-            break 
+            break
 
     if found_addr is not None:
         print("Found device with address: " + found_addr)
     else:
         print("Could not find device")
 
-    return found_addr 
+    return found_addr
+
 def find_service(bdaddr):
     service_matches = bluetooth.find_service(name = None, uuid = None, address = bdaddr)
     first_match = service_matches[0]
     print("Uses protocol: " + first_match["protocol"])
+
 
 addr = find_addr('Xbox Wireless Controller')
 find_service(addr)
@@ -35,4 +37,3 @@ try:
 except:
     print("Shithead, it didn't work")
     traceback.print_exc()
-    
