@@ -70,7 +70,8 @@ class MQTT2INPUT:
         # client.subscribe(list(map(lambda t: (t, 1), tops)))
 
         ## Or Subscribe to wildcards
-        tops = ("button/#", "trigger/#", "stick/#", "dpad/#")
+        tops = (Controller.All.BUTTONS, Controller.All.TRIGGERS,
+                Controller.All.STICKS , Controller.All.DPAD)
         for t in tops:
             self._logmqtt("Subscribing to: '{0}'".format(t))
         client.subscribe(list(map(lambda t: (t, 1), tops)))
