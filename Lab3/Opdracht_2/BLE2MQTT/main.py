@@ -155,8 +155,15 @@ class BLE2MQTT:
 
             ble_pack = self.ble_get()
 
-            # on each button, do:
-            self.mqtt_publish(Controller.X, Bits.pack(1, 1))
+            # on each button/trigger/dpad, do:
+            state = True  # Or False
+            self.mqtt_publish(Controller.X,
+                              Bits.str_to_bytes(Controller.State.ON if state else \
+                                                Controller.State.OFF))
+
+            # on each stick
+            value = 1024  # in [0, 1024]
+            self.mqtt_publish(Controller.LSTICK_UP, Bits.pack(value, 3))
 
 
 if __name__ == "__main__":

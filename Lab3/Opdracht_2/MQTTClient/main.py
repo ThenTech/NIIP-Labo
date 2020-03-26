@@ -63,16 +63,17 @@ class MQTT2INPUT:
 
         # client.subscribe("$SYS/#")
 
-        tops = Controller.values()
+        ## Subscribe to everything separately:
+        # tops = Controller.values()
+        # for t in tops:
+        #     self._logmqtt("Subscribing to: '{0}'".format(t))
+        # client.subscribe(list(map(lambda t: (t, 1), tops)))
+
+        ## Or Subscribe to wildcards
+        tops = ("button/#", "trigger/#", "stick/#", "dpad/#")
         for t in tops:
             self._logmqtt("Subscribing to: '{0}'".format(t))
-
         client.subscribe(list(map(lambda t: (t, 1), tops)))
-
-        # for name in Controller.values():
-        #     top = self.topic(name)
-        #     self._logmqtt("Subscribing to: '{0}'".format(top))
-        #     client.subscribe(top)
 
         # client.message_callback_add(sub, callback)
 
@@ -94,43 +95,64 @@ class MQTT2INPUT:
 
         # Do something for each button/stick
         # First parse msg.payload, then update input state
+        payload_str = Bits.bytes_to_str(msg.payload)
 
-        if topic == Controller.X:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.A:
-            pass
-        elif topic == Controller.B:
-            pass
-        elif topic == Controller.LT:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
-        elif topic == Controller.Y:
-            pass
+        if topic.startswith("button") or topic.startswith("trigger") or topic.startswith("dpad"):
+            btn_state = None
+
+            if payload_str == Controller.State.ON:
+                btn_state = True
+            elif payload_str == Controller.State.OFF:
+                btn_state = False
+            else:
+                return
+
+            # TODO Send btn_state to button input defined by topic
+            if topic == Controller.X:
+                pass
+            elif topic == Controller.Y:
+                pass
+            elif topic == Controller.A:
+                pass
+            elif topic == Controller.B:
+                pass
+            elif topic == Controller.LT:
+                pass
+            elif topic == Controller.RT:
+                pass
+            elif topic == Controller.START:
+                pass
+            elif topic == Controller.SELECT:
+                pass
+            elif topic == Controller.DPAD_UP:
+                pass
+            elif topic == Controller.DPAD_RIGHT:
+                pass
+            elif topic == Controller.DPAD_DOWN:
+                pass
+            elif topic == Controller.DPAD_LEFT:
+                pass
+        else:
+            # Extract value
+            linear_value = Bits.unpack(msg.payload)
+
+            # TODO Send linear_value to stick input defined by topic
+            if topic == Controller.LSTICK_UP:
+                pass
+            elif topic == Controller.LSTICK_RIGHT:
+                pass
+            elif topic == Controller.LSTICK_DOWN:
+                pass
+            elif topic == Controller.LSTICK_LEFT:
+                pass
+            elif topic == Controller.RSTICK_UP:
+                pass
+            elif topic == Controller.RSTICK_RIGHT:
+                pass
+            elif topic == Controller.RSTICK_DOWN:
+                pass
+            elif topic == Controller.RSTICK_LEFT:
+                pass
 
     def mqtt_connect(self, host, port=1883, lifetime=60):
         self.mqtt.on_connect    = self._on_connect
