@@ -8,7 +8,7 @@ import traceback
 
 from bits import Bits
 from colours import *
-from controller import Controller
+from controller import Controller, VirtualController
 
 
 class MQTT2INPUT:
@@ -20,7 +20,13 @@ class MQTT2INPUT:
 
         self.mqtt_connected = False
 
+        self._loginput("Creating virtual controller...")
+        self.ctrl = VirtualController()
+        self.ctrl.reset()
+
     def __del__(self):
+        del self.ctrl
+
         if self.mqtt_connected:
             self.mqtt.loop_stop()
             self.mqtt.disconnect()
@@ -70,8 +76,7 @@ class MQTT2INPUT:
         # client.subscribe(list(map(lambda t: (t, 1), tops)))
 
         ## Or Subscribe to wildcards
-        tops = (Controller.All.BUTTONS, Controller.All.TRIGGERS,
-                Controller.All.STICKS , Controller.All.DPAD)
+        tops = (Controller.All.BUTTONS, Controller.All.STICKS , Controller.All.DPAD)
         for t in tops:
             self._logmqtt("Subscribing to: '{0}'".format(t))
         client.subscribe(list(map(lambda t: (t, 1), tops)))
@@ -98,8 +103,8 @@ class MQTT2INPUT:
         # First parse msg.payload, then update input state
         payload_str = Bits.bytes_to_str(msg.payload)
 
-        if topic.startswith("button") or topic.startswith("trigger") or topic.startswith("dpad"):
-            btn_state = None
+        if (topic.startswith("button") or topic.startswith("dpad")) and not "trigger" in topic:
+            btn_state = False
 
             if payload_str == Controller.State.ON:
                 btn_state = True
@@ -108,58 +113,23 @@ class MQTT2INPUT:
             else:
                 return
 
-            # TODO Send btn_state to button input defined by topic
-            if topic == Controller.X:
-                pass
-            elif topic == Controller.Y:
-                pass
-            elif topic == Controller.A:
-                pass
-            elif topic == Controller.B:
-                pass
-            elif topic == Controller.LT:
-                pass
-            elif topic == Controller.RT:
-                pass
-            elif topic == Controller.START:
-                pass
-            elif topic == Controller.SELECT:
-                pass
-            elif topic == Controller.DPAD_UP:
-                pass
-            elif topic == Controller.DPAD_RIGHT:
-                pass
-            elif topic == Controller.DPAD_DOWN:
-                pass
-            elif topic == Controller.DPAD_LEFT:
-                pass
-        else:
+            self.ctrl.set_value(topic, btn_state)
+        elif topic.startswith("stick") or "trigger" in topic:
             # Extract value
             linear_value = Bits.unpack(msg.payload)
-
-            # TODO Send linear_value to stick input defined by topic
-            if topic == Controller.LSTICK_UP:
-                pass
-            elif topic == Controller.LSTICK_RIGHT:
-                pass
-            elif topic == Controller.LSTICK_DOWN:
-                pass
-            elif topic == Controller.LSTICK_LEFT:
-                pass
-            elif topic == Controller.RSTICK_UP:
-                pass
-            elif topic == Controller.RSTICK_RIGHT:
-                pass
-            elif topic == Controller.RSTICK_DOWN:
-                pass
-            elif topic == Controller.RSTICK_LEFT:
-                pass
+            self.ctrl.set_value(topic, linear_value)
 
     def mqtt_connect(self, host, port=1883, lifetime=60):
         self.mqtt.on_connect    = self._on_connect
         self.mqtt.on_disconnect = self._on_disconnect
         self.mqtt.on_message    = self._on_message
-        self.mqtt.connect(host, port, lifetime)
+
+        try:
+            self._logmqtt("Trying to connect to {0}:{1}...".format(host, port))
+            self.mqtt.connect(host, port, lifetime)
+        except Exception as e:
+            self._error(e)
+            self.mqtt_connected = False
 
     def mqtt_publish(self, topic, payload, qos=0, retain=False):
         topic = self.topic(topic)
@@ -172,6 +142,12 @@ class MQTT2INPUT:
     ## General
 
     def start(self):
+        if not self.mqtt_connected:
+            self._logmqtt(style("Warning: Not connected?", Colours.FG.BRIGHT_RED))
+            return
+
+        self._log("Listening for MQTT packets to control the VirtualController...")
+
         try:
             self.mqtt.loop_forever()
         except KeyboardInterrupt:

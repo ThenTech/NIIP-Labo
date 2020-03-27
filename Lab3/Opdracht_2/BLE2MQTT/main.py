@@ -27,6 +27,8 @@ class BLE2MQTT:
         self.ble_sock = None
 
     def __del__(self):
+        if self.ble_sock:
+            self.ble_sock.close()
         if self.mqtt_connected:
             self.mqtt.loop_stop()
             self.mqtt.disconnect()
@@ -106,7 +108,17 @@ class BLE2MQTT:
         # TODO implement me: get next packet?
         # e.g. proper reading and getting length and
         # then only read length amount of bytes left.
-        return self.ble_sock.recv(1024)
+        data = b""
+
+        while True:
+            recv = self.ble_sock.recv(1024)
+
+            if recv:
+                data += recv
+            else:
+                break
+
+        return data
 
 
     ###########################################################################
@@ -162,8 +174,12 @@ class BLE2MQTT:
                                                 Controller.State.OFF))
 
             # on each stick
-            value = 1024  # in [0, 1024]
-            self.mqtt_publish(Controller.LSTICK_UP, Bits.pack(value, 3))
+            value = 0  # in [-32768 to 32767]
+            self.mqtt_publish(Controller.LSTICK_Y, Bits.pack(value, 4))
+
+            # on each trigger
+            value = 0  # in [0 to 255]
+            self.mqtt_publish(Controller.LT, Bits.pack(value, 1))
 
 
 if __name__ == "__main__":
