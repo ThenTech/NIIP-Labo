@@ -55,23 +55,10 @@ def handle_dpad(code, val):
     print("Publish '" + str(abs(val)) + "' to topic: " + topic)
 
 def handle_axis(code, value):
-    center = STICK_MAX / 2
-    
-    value = value - center 
-
-    if abs(value) <= CENTER_TOLERANCE:
-        value = 0
-    
-    if code == 0:
-        if value < 0:
-            print("LEFT_DOWN")
-        else:
-            print("LEFT_UP")
-        print(value)
     pass
 
 
-gamepad = InputDevice("/dev/input/event20")
+gamepad = InputDevice("/dev/input/js1")
 
 print(gamepad.capabilities()[3])
 
@@ -83,6 +70,6 @@ for event in gamepad.read_loop():
     if event.code == 16 or event.code == 17:
         handle_dpad(event.code, event.value)
     if event.code == 0 or event.code == 1 or event.code == 2 or event.code == 5:
-        #print(event)
+        print(event)
         handle_axis(event.code, event.value)
     
