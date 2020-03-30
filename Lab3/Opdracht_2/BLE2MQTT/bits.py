@@ -11,6 +11,11 @@ class Bits:
         return ((val >> idx) & ((1 << size) - 1))
 
     @staticmethod
+    def set(src, idx, val, size = 1):
+        src &= ~(((1 << size) - 1) << idx)
+        return src | Bits.bit(idx, val, size)
+
+    @staticmethod
     def to_single_byte(raw):
         if isinstance(raw, bytes):
             return int(raw[0])

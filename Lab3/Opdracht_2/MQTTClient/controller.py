@@ -1,5 +1,5 @@
 import pyxinput
-
+from bits import Bits
 
 class Controller:
     """
@@ -28,6 +28,9 @@ class Controller:
     DPAD_RIGHT   = "dpad/right"
     DPAD_DOWN    = "dpad/down"
     DPAD_LEFT    = "dpad/left"
+
+    DPAD_X_RESET = "dpad/x_reset"
+    DPAD_Y_RESET = "dpad/y_reset"
 
     START = "button/start"
     BACK  = "button/back"
@@ -86,15 +89,32 @@ class VirtualController:
         Controller.DPAD_LEFT  : pyxinput.vController.DPAD_LEFT,
     }
 
+    _DPAD_MAP_IDX = {
+        pyxinput.vController.DPAD_UP    : 0,  # 1
+        pyxinput.vController.DPAD_RIGHT : 3,  # 8
+        pyxinput.vController.DPAD_DOWN  : 1,  # 2
+        pyxinput.vController.DPAD_LEFT  : 2,  # 4
+    }
+
     def __init__(self):
         self.ctrl = pyxinput.vController(percent=False)
         # self.read = pyxinput.rController(1)
+        self.dpad_mask = pyxinput.vController.DPAD_OFF
+
+    def _dpad_set(self, mask=0, value=0):
+        if mask == pyxinput.vController.DPAD_OFF:
+            # 0 == Off
+            self.dpad_mask = mask
+        else:
+            idx = VirtualController._DPAD_MAP_IDX[mask]
+            self.dpad_mask = Bits.set(self.dpad_mask, idx, 1 if value else 0)
 
     def reset(self):
         """Reset all states to nominal or zero position."""
         for key in VirtualController.CTRL_MAP.values():
             self.ctrl.set_value(key, 0)
-        self.ctrl.set_value("Dpad", pyxinput.vController.DPAD_OFF)
+        self._dpad_set(pyxinput.vController.DPAD_OFF)
+        self.ctrl.set_value("Dpad", self.dpad_mask)
 
     def set_value(self, topic, value=0):
         """Set a value on the controller
@@ -106,8 +126,8 @@ class VirtualController:
             ctrl_str = VirtualController.CTRL_MAP[topic]
             self.ctrl.set_value(ctrl_str, value)
         elif topic in VirtualController.DPAD_MAP:
-            value = VirtualController.DPAD_MAP[topic] if value else \
-                    pyxinput.vController.DPAD_OFF
-            self.ctrl.set_value("Dpad", value)
+            mask = VirtualController.DPAD_MAP[topic]
+            self._dpad_set(mask, value)
+            self.ctrl.set_value("Dpad", self.dpad_mask)
         else:
             print("[VirtualController::set_value] Unknown topic '{0}'".format(topic))

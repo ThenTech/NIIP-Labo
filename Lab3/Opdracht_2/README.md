@@ -27,3 +27,7 @@ For Windows, also install the virtual bus driver by running `tools/ScpVBus-x64/i
 
 **WARNING** The pip package for `PYXInput` contains a bug: in the file `virtual_controller.py`, change `target_type` on line 128 to `target_value`.
 
+#### Explanation
+
+![schema](0_schema.png)
+

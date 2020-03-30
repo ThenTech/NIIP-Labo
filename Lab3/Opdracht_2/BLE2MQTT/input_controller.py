@@ -1,8 +1,7 @@
-
 import struct
 from controller import Controller
 
-AXIS_MAX = 32767
+AXIS_MAX = 32767  # ((1 << 15) - 1)
 
 controller_dict = {
     0: Controller.A,
@@ -12,12 +11,13 @@ controller_dict = {
 
     6: Controller.LSHOULDER,
     7: Controller.RSHOULDER,
-    
+
     11: Controller.START,
 
     13: Controller.LTHUMB,
     14: Controller.RTHUMB
 }
+
 def handle_btn(code, val):
     try:
         topic = controller_dict[code]
@@ -35,7 +35,7 @@ def handle_dpad(code, val):
             topic = Controller.DPAD_RIGHT
         else:
             topic = Controller.DPAD_X_RESET
-    
+
     if code == 7:
         if val < 0:
             topic = Controller.DPAD_UP
@@ -43,7 +43,7 @@ def handle_dpad(code, val):
             topic = Controller.DPAD_DOWN
         else:
             topic = Controller.DPAD_Y_RESET
-    
+
     print("Publish '" + str(abs(val)) + "' to topic: " + topic)
 
 def handle_trigger(code, val):
@@ -67,31 +67,38 @@ def handle_axis(code, val):
         topic = Controller.RSTICK_X
     if code == 3:
         topic = Controller.RSTICK_Y
-    
+
     print("Publish '" + str(abs(val)) + "' to topic: " + topic)
+
+
 
 infile_path = "/dev/input/js1"
 EVENT_SIZE = struct.calcsize("IhBB")
-file = open(infile_path, "rb")
-event = file.read(EVENT_SIZE)
+infile = open(infile_path, "rb")
+
+event = infile.read(EVENT_SIZE)
+
 while event:
     #print(struct.unpack("IhBB", event))
-    (time, value, type, code) = struct.unpack("IhBB", event)
-    # buttons (type = 1)
-    if type == 1:
+    (time, value, type_, code) = struct.unpack("IhBB", event)
+
+    if type_ == 1:
+        # buttons (type = 1)
         handle_btn(code, value)
-    # axis (type = 2)
-    if type == 2:
-        # dpad (code = 6 or code = 7)
-        if code == 6 or code == 7:
-            handle_dpad(code, value)
-        # triggers (code = 4 or code = 5)
-        if code == 4 or code == 5:
-            handle_trigger(code, value)
-        # axis (code = 0, code = 1, code = 2 or code = 3)
-        if code == 0 or code == 1 or code == 2 or code == 3:
+    elif type_ == 2:
+        # axis (type = 2)
+        if 0 <= code <= 3:
+            # axis (code = 0, code = 1, code = 2 or code = 3)
             handle_axis(code, value)
-        
+        elif 4 <= code <= 5:
+            # triggers (code = 4 or code = 5)
+            handle_trigger(code, value)
+        elif 6 <= code <= 7:
+            # dpad (code = 6 or code = 7)
+            handle_dpad(code, value)
+        else:
+            print("Unknown code for type 2: {0}?".format(code))
+    else:
+        print("Unknown type: {0}?".format(type_))
 
-
-    event = file.read(EVENT_SIZE)
+    event = infile.read(EVENT_SIZE)
