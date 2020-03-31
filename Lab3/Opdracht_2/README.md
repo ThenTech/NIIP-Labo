@@ -9,17 +9,18 @@ To run the BLE2MQTT relay, `cd` into the `BLE2MQTT` directory and run:
 python3 main.py 
 ```
 
+**NOTE** This uses the Linux built-in Bluetooth connection drivers. The controller will be streaming data to a file such as `/dev/input/js1`.
+
 For the MQTT Client, `cd` into the `MQTTClient` directory and also run:
 
 ```sh
 python3 main.py 
 ```
 
-Both depend on `paho.mqtt`, the relay also uses `bluetooth`. For the client, `pyxinput` is used to emulate a virtual controller.
+Both depend on `paho.mqtt`, the relay also uses the built-in Linux drivers for Bluetooth. For the client, `pyxinput` is used to emulate a virtual controller.
 
 ```
 pip install paho-mqtt
-pip install PyBluez
 pip install PYXInput
 ```
 
