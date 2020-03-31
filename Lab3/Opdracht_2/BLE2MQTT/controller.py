@@ -3,11 +3,19 @@ if sys.platform == "win32":
     try:
         import pyxinput
     except:
-        HAS_PXY_INPUT = False
+        HAS_PYXINPUT = False
     else:
-        HAS_PXY_INPUT = True
+        HAS_PYXINPUT = True
 else:
-    HAS_PXY_INPUT = False
+    HAS_PYXINPUT = False
+
+if not HAS_PYXINPUT:
+    class pyxinput:
+        class vController:
+            DPAD_UP    = 1
+            DPAD_RIGHT = 8
+            DPAD_DOWN  = 2
+            DPAD_LEFT  = 4
 
 from bits import Bits
 
@@ -107,7 +115,7 @@ class VirtualController:
     }
 
     def __init__(self):
-        if not HAS_PXY_INPUT:
+        if not HAS_PYXINPUT:
             raise Exception("[VirtualController] PXYInput module not loaded!")
 
         self.ctrl = pyxinput.vController(percent=False)
