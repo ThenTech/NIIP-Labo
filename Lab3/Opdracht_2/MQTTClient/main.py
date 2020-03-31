@@ -148,10 +148,10 @@ class MQTT2INPUT:
     ## General
 
     def start(self):
-        self.mqtt.loop()
-        self.mqtt.loop()
-        self.mqtt.loop()
-        time.sleep(1)
+        # Loop a couple of times to ensure connection
+        while not self.mqtt_connected:
+            self.mqtt.loop()
+            time.sleep(1)
 
         if not self.mqtt_connected:
             self._logmqtt(style("Warning: Not connected?", Colours.FG.BRIGHT_RED))

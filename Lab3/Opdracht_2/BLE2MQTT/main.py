@@ -43,7 +43,7 @@ class BLE2MQTT:
     def _error(self, e=None, tb=True):
         if e:
             self._log(style(type(e).__name__, Colours.FG.RED) + ": {}".format(e))
-            if tb: 
+            if tb:
                 self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
         else:
             self._log(style("Unknown error", Colours.FG.RED))
@@ -76,7 +76,11 @@ class BLE2MQTT:
 
     def ble_get(self):
         """Returns topic, value pair"""
-        return self.ble_ctrl.read_next()
+        try:
+            return self.ble_ctrl.read_next()
+        except Exception as e:
+            self._error(e)
+            return None, None
 
 
     ###########################################################################
@@ -126,7 +130,7 @@ class BLE2MQTT:
 
     def start(self):
         self.mqtt.loop_start()
-        time.sleep(1)
+        time.sleep(2)  # Wait a bit for connection to complete
 
         try:
             while self.ble_connected and self.mqtt_connected:
@@ -141,6 +145,6 @@ if __name__ == "__main__":
     client = BLE2MQTT("Xbox Wireless Controller")
     client.ble_connect()
     # client.mqtt_connect("127.0.0.1")
-    # DONT USE PUBLIC IP, OTHERWISE TELENET WILL KICK ME FROM THE INTERNET 
+    # DONT USE PUBLIC IP, OTHERWISE TELENET WILL KICK ME FROM THE INTERNET
     client.mqtt_connect(host="192.168.0.175", port=1883)
     client.start()

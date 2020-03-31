@@ -13,9 +13,10 @@ class InputController:
     """Warning: uses linux raw file input stream for joysticks!"""
     STRUCT_PACK = "IhBB"
     EVENT_SIZE  = struct.calcsize(STRUCT_PACK)
+    DEVICES     = "/proc/bus/input/devices"
 
     AXIS_MAX = 32767  # ((1 << 15) - 1)
-    
+
     # CTRL_MAP = {
     #     0: Controller.A,
     #     1: Controller.B,
@@ -53,7 +54,7 @@ class InputController:
 
         joystick = self._search_controller(ctrl_name)
         infile = infile + joystick
-    
+
         if not path.exists(infile):
             raise InputControllerException("[InputController] Inputstream '{0}' not available?".format(infile))
         self.stream = open(infile, "rb")
@@ -68,7 +69,11 @@ class InputController:
     def _search_controller(self, ctrl_name):
         # cat /proc/bus/input/devices
         joystick = "js1"
-        with open("/proc/bus/input/devices", "r") as devices:
+
+        if not path.exists(InputController.DEVICES):
+            raise InputControllerException("[InputController] No input devices?")
+
+        with open(InputController.DEVICES, "r") as devices:
             all_devs = devices.read()
             name = "N: Name=\"{}\"".format(ctrl_name)
 
@@ -76,7 +81,7 @@ class InputController:
                 raise InputControllerException("[InputController] No connected controller '{0}' found!".format(ctrl_name))
 
             first, second = all_devs.split(name, 1)
-        
+
             if second and "H: Handlers=" in second:
                 second = second.split("\n")
                 for line in second:
@@ -89,7 +94,7 @@ class InputController:
                             raise InputControllerException("[InputController] Found '{0}', but no joystick mapper!".format(ctrl_name))
             else:
                 raise InputControllerException("[InputController] No connected controller '{0}' found!".format(ctrl_name))
-            
+
         return joystick
 
     def _log(self, msg):
@@ -103,9 +108,9 @@ class InputController:
     def _handle_btn(self, code, value):
         if not code in InputController.CTRL_MAP:
             raise InputControllerException("[InputController] Button with code {0} not implemented!".format(code))
-        
+
         topic, value = InputController.CTRL_MAP[code], self.state(value)
-        
+
         self._log("BUTTON to topic '{0}': {1}".format(topic, value))
         return topic, value
 
@@ -141,7 +146,7 @@ class InputController:
         value += InputController.AXIS_MAX
         value = int(value / (InputController.AXIS_MAX * 2) * 255)
         topic = ""
-        
+
         if code == 5:
             topic = Controller.LT
         elif code == 4:
@@ -152,7 +157,7 @@ class InputController:
 
     def _handle_axis(self, code, value):
         topic = ""
-    
+
         if code == 0:
             topic = Controller.LSTICK_X
         elif code == 1:
@@ -179,7 +184,7 @@ class InputController:
         event = self.stream.read(InputController.EVENT_SIZE) if self.stream else None
 
         if event:
-            time, value, type_, code = struct.unpack("IhBB", event)
+            timestamp, value, type_, code = struct.unpack(InputController.STRUCT_PACK, event)
 
             if type_ == 1:
                 # buttons (type = 1)
@@ -197,6 +202,9 @@ class InputController:
                     return self._handle_dpad(code, value)
                 else:
                     self._log("Unknown code for type 2: {0}?".format(code))
+            elif 129 <= code <= 130:
+                # Device info setup: ignore
+                pass
             else:
                 self._log("Unknown type: {0}?".format(type_))
 
