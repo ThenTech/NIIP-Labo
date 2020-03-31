@@ -1,7 +1,7 @@
 import struct
 from os import path
 from controller import Controller
-
+from bits import Bits
 
 DEBUG = True
 
@@ -41,7 +41,7 @@ class InputController:
         6: Controller.LSHOULDER,
         7: Controller.RSHOULDER,
 
-        6: Controller.BACK,
+        10: Controller.BACK,
         11: Controller.START,
 
         13: Controller.LTHUMB,
@@ -49,6 +49,8 @@ class InputController:
     }
 
     def __init__(self, ctrl_name="Xbox Wireless Controller", infile="/dev/input/"):
+        self.stream = None
+
         joystick = self._search_controller(ctrl_name)
         infile = infile + joystick
     
@@ -68,7 +70,12 @@ class InputController:
         joystick = "js1"
         with open("/proc/bus/input/devices", "r") as devices:
             all_devs = devices.read()
-            first, second = all_devs.split("N: Name=\"{}\"".format(ctrl_name), 1)
+            name = "N: Name=\"{}\"".format(ctrl_name)
+
+            if name not in all_devs:
+                raise InputControllerException("[InputController] No connected controller '{0}' found!".format(ctrl_name))
+
+            first, second = all_devs.split(name, 1)
         
             if second and "H: Handlers=" in second:
                 second = second.split("\n")
@@ -90,7 +97,8 @@ class InputController:
             print("[InputController] {0}".format(msg))
 
     def state(self, value):
-        return Controller.State.ON if value else Controller.State.OFF
+        return Bits.str_to_bytes(Controller.State.ON if value else \
+                                 Controller.State.OFF)
 
     def _handle_btn(self, code, value):
         if not code in InputController.CTRL_MAP:
@@ -140,7 +148,7 @@ class InputController:
             topic = Controller.RT
 
         self._log("TRIGGER to topic '{0}': {1}".format(topic, value))
-        return topic, value
+        return topic, Bits.pack(value, 1)
 
     def _handle_axis(self, code, value):
         topic = ""
@@ -155,7 +163,7 @@ class InputController:
             topic = Controller.RSTICK_Y
 
         self._log("AXIS to topic '{0}': {1}".format(topic, value))
-        return topic, value
+        return topic, Bits.pack(value, 4, signed=True)
 
     def read_loop(self, callback=None):
         while True:

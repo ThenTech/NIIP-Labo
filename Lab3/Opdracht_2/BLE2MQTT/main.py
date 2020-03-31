@@ -1,21 +1,19 @@
-import bluetooth
-
 # https://github.com/eclipse/paho.mqtt.python
 import paho.mqtt.client as MQTT
 from paho.mqtt.client import MQTTv311
 
 from os import path
+import time
 import traceback
 
 from bits import Bits
 from colours import *
 from controller import Controller
-
+from input_controller import InputController
 
 class BLE2MQTT:
-    def __init__(self, name, addr):
+    def __init__(self, name):
         self.ble_name   = name
-        self.addr       = addr
         self.topic_base = "-".join(self.ble_name.split(' '))
 
         self.mqtt = MQTT.Client(client_id=self.name(), clean_session=True, userdata=None, protocol=MQTTv311, transport="tcp")
@@ -24,11 +22,11 @@ class BLE2MQTT:
         self.ble_connected  = False
         self.mqtt_connected = False
 
-        self.ble_sock = None
+        self.ble_ctrl = None
 
     def __del__(self):
-        if self.ble_sock:
-            self.ble_sock.close()
+        if self.ble_ctrl:
+            del self.ble_ctrl
         if self.mqtt_connected:
             self.mqtt.loop_stop()
             self.mqtt.disconnect()
@@ -42,10 +40,11 @@ class BLE2MQTT:
     def _logmqtt(self, msg):
         self._log("[{0}] {1}".format(style("MQTT", Colours.FG.BLUE), msg))
 
-    def _error(self, e=None):
+    def _error(self, e=None, tb=True):
         if e:
             self._log(style(type(e).__name__, Colours.FG.RED) + ": {}".format(e))
-            self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
+            if tb: 
+                self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
         else:
             self._log(style("Unknown error", Colours.FG.RED))
 
@@ -61,64 +60,23 @@ class BLE2MQTT:
     def name(self):
         return self.topic_base
 
-    @classmethod
-    def from_name(cls, name):
-        found_addr = None
-
-        for bdaddr, name in BLE2MQTT.ble_discover():
-            if name == name:
-                found_addr = bdaddr
-                break
-
-        if found_addr is not None:
-            print("Found device '{0}' with address: {1}".format(name, found_addr))
-        else:
-            raise Exception("Could not find device '{0}'!".format(name))
-
-        return cls(name, found_addr)
-
-
     ###########################################################################
     ## BLUETOOTH
 
-    @staticmethod
-    def ble_discover():
-        return bluetooth.discover_devices(lookup_names=True)
-
     def ble_connect(self):
-        # TODO implement me
-
-        service_matches = bluetooth.find_service(name=None, uuid=None, address=self.addr)
-        first_match = service_matches[0]
-        self._logble("Uses protocol: " + first_match["protocol"])
-
         try:
-            self.ble_sock = bluetooth.BluetoothSocket(bluetooth.L2CAP)
-
             self._logble("Attempting connect...")
-            self.ble_sock.connect((self.addr, 3))
+            self.ble_ctrl = InputController(ctrl_name=self.ble_name)
         except Exception as e:
-            self._error(e)
+            self._error(e, tb=False)
             self.ble_connected = False
         else:
             self._logble(style("Connected", Colours.FG.GREEN))
             self.ble_connected = True  # OK
 
     def ble_get(self):
-        # TODO implement me: get next packet?
-        # e.g. proper reading and getting length and
-        # then only read length amount of bytes left.
-        data = b""
-
-        while True:
-            recv = self.ble_sock.recv(1024)
-
-            if recv:
-                data += recv
-            else:
-                break
-
-        return data
+        """Returns topic, value pair"""
+        return self.ble_ctrl.read_next()
 
 
     ###########################################################################
@@ -147,7 +105,14 @@ class BLE2MQTT:
         self.mqtt.on_connect    = self._on_connect
         self.mqtt.on_disconnect = self._on_disconnect
         self.mqtt.on_message    = self._on_message
-        self.mqtt.connect(host, port, lifetime)
+
+        try:
+            self._logmqtt("Trying to connect to {0}:{1}...".format(host, port))
+            self.mqtt.connect(host, port, lifetime)
+            # self.mqtt_connected = True
+        except Exception as e:
+            self._error(e, tb=False)
+            self.mqtt_connected = False
 
     def mqtt_publish(self, topic, payload, qos=0, retain=False):
         topic = self.topic(topic)
@@ -161,29 +126,21 @@ class BLE2MQTT:
 
     def start(self):
         self.mqtt.loop_start()
+        time.sleep(1)
 
-        while self.ble_connected and self.mqtt_connected:
-            # TODO Receive inputs from controller
-
-            ble_pack = self.ble_get()
-
-            # on each button/trigger/dpad, do:
-            state = True  # Or False
-            self.mqtt_publish(Controller.X,
-                              Bits.str_to_bytes(Controller.State.ON if state else \
-                                                Controller.State.OFF))
-
-            # on each stick
-            value = 0  # in [-32768 to 32767]
-            self.mqtt_publish(Controller.LSTICK_Y, Bits.pack(value, 4))
-
-            # on each trigger
-            value = 0  # in [0 to 255]
-            self.mqtt_publish(Controller.LT, Bits.pack(value, 1))
-
+        try:
+            while self.ble_connected and self.mqtt_connected:
+                topic, value = self.ble_get()
+                if topic and value is not None:
+                    self.mqtt_publish(topic, value)
+        except KeyboardInterrupt:
+            self.mqtt.disconnect()
+            self.mqtt_connected = False
 
 if __name__ == "__main__":
-    client = BLE2MQTT.from_name("Xbox Wireless Controller")
+    client = BLE2MQTT("Xbox Wireless Controller")
     client.ble_connect()
-    client.mqtt_connect("127.0.0.1")
+    # client.mqtt_connect("127.0.0.1")
+    # DONT USE PUBLIC IP, OTHERWISE TELENET WILL KICK ME FROM THE INTERNET 
+    client.mqtt_connect(host="192.168.0.175", port=1883)
     client.start()

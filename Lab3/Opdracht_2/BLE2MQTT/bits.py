@@ -32,13 +32,13 @@ class Bits:
         return val
 
     @staticmethod
-    def pack(val, size):
+    def pack(val, size, signed=False):
         # bb = b""
         # while val > 0:
         #     bb = bytes((val & 0xFF,)) + bb
         #     val >>= 8
         # return Bits.pad_bytes(bb, size)
-        return int.to_bytes(val, size, "big")
+        return int.to_bytes(val, size, "big", signed=signed)
 
     @staticmethod
     def unpack(val, endianness="big"):

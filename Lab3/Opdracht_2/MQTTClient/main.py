@@ -1,9 +1,8 @@
-
 # https://github.com/eclipse/paho.mqtt.python
 import paho.mqtt.client as MQTT
 from paho.mqtt.client import MQTTv311
 
-from os import path
+import time
 import traceback
 
 from bits import Bits
@@ -40,10 +39,11 @@ class MQTT2INPUT:
     def _logmqtt(self, msg):
         self._log("[{0}] {1}".format(style("MQTT", Colours.FG.BLUE), msg))
 
-    def _error(self, e=None):
+    def _error(self, e=None, tb=True):
         if e:
             self._log(style(type(e).__name__, Colours.FG.RED) + ": {}".format(e))
-            self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
+            if tb:
+                self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
         else:
             self._log(style("Unknown error", Colours.FG.RED))
 
@@ -54,7 +54,11 @@ class MQTT2INPUT:
         return style("<{0}, mqtt={2}>".format(self.name(), self.mqtt_connected), Colours.FG.YELLOW)
 
     def topic(self, name):
-        return path.join(self.topic_base, name)
+        sep = "/"
+        if self.topic_base.endswith(sep):
+            return self.topic_base + name
+        else:
+            return self.topic_base + sep + name
 
     def name(self):
         return "MQTT2INPUT"
@@ -77,6 +81,8 @@ class MQTT2INPUT:
 
         ## Or Subscribe to wildcards
         tops = (Controller.All.BUTTONS, Controller.All.STICKS , Controller.All.DPAD)
+        tops = list(map(self.topic, tops))
+
         for t in tops:
             self._logmqtt("Subscribing to: '{0}'".format(t))
         client.subscribe(list(map(lambda t: (t, 1), tops)))
@@ -128,7 +134,7 @@ class MQTT2INPUT:
             self._logmqtt("Trying to connect to {0}:{1}...".format(host, port))
             self.mqtt.connect(host, port, lifetime)
         except Exception as e:
-            self._error(e)
+            self._error(e, tb=False)
             self.mqtt_connected = False
 
     def mqtt_publish(self, topic, payload, qos=0, retain=False):
@@ -142,6 +148,11 @@ class MQTT2INPUT:
     ## General
 
     def start(self):
+        self.mqtt.loop()
+        self.mqtt.loop()
+        self.mqtt.loop()
+        time.sleep(1)
+
         if not self.mqtt_connected:
             self._logmqtt(style("Warning: Not connected?", Colours.FG.BRIGHT_RED))
             return
@@ -157,5 +168,6 @@ class MQTT2INPUT:
 
 if __name__ == "__main__":
     client = MQTT2INPUT("Xbox Wireless Controller")
-    client.mqtt_connect("127.0.0.1")
+    # client.mqtt_connect("127.0.0.1")
+    client.mqtt_connect(host="apps.bramkelchtermans.be", port=1883)
     client.start()
