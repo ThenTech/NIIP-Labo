@@ -22,7 +22,7 @@ class Webcam:
 
     @property
     def width(self):
-        return self._cap.get(3) if self._cap else 0
+        return int(self._cap.get(3)) if self._cap else 0
 
     @width.setter
     def width(self, value):
@@ -31,7 +31,7 @@ class Webcam:
 
     @property
     def height(self):
-        return self._cap.get(4) if self._cap else 0
+        return int(self._cap.get(4)) if self._cap else 0
 
     @height.setter
     def height(self, value):
@@ -85,7 +85,7 @@ class Webcam:
             self.fps = fps
 
     def capture_start(self):
-        self._cap = cv2.VideoCapture(0)
+        self._cap = cv2.VideoCapture(0)  # arg cv2.CAP_DSHOW removes warning, but tanks fps...
 
         # self.brightness = 10
 
