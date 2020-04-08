@@ -171,9 +171,9 @@ class ScreenTracker:
                 # Look at brightness etc
                 data = self.input_callback(self.cropped)
 
-                for line in data:
+                for i, line in enumerate(data, start=1):
                     cv2.putText(larger, line,
-                                (10, offset + 1 * line_height), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+                                (10, offset + i * line_height), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
             cv2.imshow("Data input", larger)
 

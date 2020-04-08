@@ -14,7 +14,7 @@ class Detector:
         self.data       = bitarray()
         self.buffer     = bitarray()
 
-        self.received = []
+        self.received = [b""]
 
         self.value_size  = 2  # Least amount of values in window that need to be the same
         self.window_size = 2  # Amount of values to process before determining one bit
@@ -48,9 +48,20 @@ class Detector:
 
             self.buffer = bitarray()
 
-        return ("Data: {0}% white".format(int(ratio * 100),)) +  tuple(self.received)
+            if self.data.length() % 8 == 0:
+                # Got at least 1 full byte
+                bytestr = self.data.tobytes()
+                self.received[-1] = bytestr
 
-        # return Bits.bytes_to_str(self.data)
+                self._log(f"Got: ({len(bytestr)}) {bytestr}")
+
+                if bytestr[-1] == b'\n':
+                    self._log(f"Completed: {Bits.bytes_to_str(bytestr)}")
+                    self._log("Reset...")
+                    self.data = bitarray()
+                    self.received.append(b"")
+
+        return (f"Data: {int(ratio * 100)}% white",) + tuple(map(str, self.received))
 
 
 if __name__ == "__main__":

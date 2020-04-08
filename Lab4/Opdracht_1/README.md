@@ -12,6 +12,7 @@ Add the directory `opencv\build\x64\vc15\bin` to your `PATH` variable (Windows) 
 ```
 pip install numpy
 pip install opencv-contrib-python
+pip install bitarray
 ```
 
 The following script should now display the OpenCV version (Python 3 example):
