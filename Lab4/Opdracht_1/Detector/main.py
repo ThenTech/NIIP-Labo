@@ -25,6 +25,12 @@ class Detector:
     def _log(self, msg):
         print(style("[Detector]", Colours.FG.YELLOW), msg)
 
+    def reset(self):
+        self.data   = bitarray()
+        self.buffer = bitarray()
+        self.received = [b""]
+        self.got_start = False
+
     def determine_bits(self, frame):
         # Callback gets called 16 times per second (16 fps limit)
         # Acquisition rate should be twice the input,
@@ -60,20 +66,17 @@ class Detector:
 
                 # Count amount of True/False bits in window
                 positive = window.count(True)
-                negative = self.window_size - positive
+                # negative = self.window_size - positive
 
                 # On self.window_size received 0/1 bits, append 0/1 bit to data
-                if positive >= self.value_size:
-                    self.data.append(True)
-                elif negative >= self.value_size:
-                    self.data.append(False)
+                self.data.append(positive >= self.value_size)
 
                 if self.data.length() % 8 == 0:
                     # Got at least 1 full byte
                     bytestr = self.data.tobytes()
                     self.received[-1] = bytestr
 
-                    self._log(f"Got: ({len(bytestr)}) {bytestr}")
+                    self._log(f"Got: {self.data[-8:].to01()} => ({len(bytestr)}) {bytestr}")
 
                     if bytestr.endswith(self.stop_bytes):
                         # Remove stop bytes
@@ -85,11 +88,12 @@ class Detector:
                         self._log("Reset...")
                         self.data = bitarray()
                         self.received.append(b"")
+                        self.got_start = False
 
         return (f"Data: {int(ratio * 100)}% white, Found start bits? {self.got_start}",) + tuple(map(str, self.received))
 
 
 if __name__ == "__main__":
     d = Detector(start_bits="111100001111")
-    tracker = ScreenTracker(input_callback=d.determine_bits, tracker="mosse", fps_limit=8)
+    tracker = ScreenTracker(input_callback=d.determine_bits, reset_callback=d.reset, tracker="mil", fps_limit=8)
     tracker.start()
