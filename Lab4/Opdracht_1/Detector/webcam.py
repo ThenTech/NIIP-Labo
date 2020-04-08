@@ -22,57 +22,57 @@ class Webcam:
 
     @property
     def width(self):
-        return int(self._cap.get(3)) if self._cap else 0
+        return int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH)) if self._cap else 0
 
     @width.setter
     def width(self, value):
         if self._cap and value > 0:
-            self._cap.set(3, value)
+            self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, value)
 
     @property
     def height(self):
-        return int(self._cap.get(4)) if self._cap else 0
+        return int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) if self._cap else 0
 
     @height.setter
     def height(self, value):
         if self._cap and value > 0:
-            self._cap.set(4, value)
+            self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, value)
 
     @property
     def fps(self):
-        return self._cap.get(5) if self._cap else 0
+        return self._cap.get(cv2.CAP_PROP_FPS) if self._cap else 0
 
     @fps.setter
     def fps(self, value):
         if self._cap and 0 < value <= 60:
-            self._cap.set(5, value)
+            self._cap.set(cv2.CAP_PROP_FPS, value)
 
     @property
     def brightness(self):
-        return self._cap.get(10) if self._cap else 0
+        return self._cap.get(cv2.CAP_PROP_BRIGHTNESS) if self._cap else 0
 
     @brightness.setter
     def brightness(self, value):
         if self._cap and value > 0:
-            self._cap.set(10, value)
+            self._cap.set(cv2.CAP_PROP_BRIGHTNESS, value)
 
     @property
     def contrast(self):
-        return self._cap.get(11) if self._cap else 0
+        return self._cap.get(cv2.CAP_PROP_CONTRAST) if self._cap else 0
 
     @contrast.setter
     def contrast(self, value):
         if self._cap and value > 0:
-            self._cap.set(11, value)
+            self._cap.set(cv2.CAP_PROP_CONTRAST, value)
 
     @property
     def saturation(self):
-        return self._cap.get(12) if self._cap else 0
+        return self._cap.get(cv2.CAP_PROP_SATURATION) if self._cap else 0
 
     @saturation.setter
     def saturation(self, value):
         if self._cap and value > 0:
-            self._cap.set(12, value)
+            self._cap.set(cv2.CAP_PROP_SATURATION, value)
 
     def set_params(self, brightness=None, contrast=None, saturation=None, fps=None):
         if brightness:

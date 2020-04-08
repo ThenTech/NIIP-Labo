@@ -1,7 +1,7 @@
 # NIIP-Labo 4
 > **Bram Kelchtermans, William Thenaers**
 
-## Part 1: 
+## Part 1:
 
 ##### Install OpenCV
 
@@ -11,8 +11,8 @@ Add the directory `opencv\build\x64\vc15\bin` to your `PATH` variable (Windows) 
 
 ```
 pip install numpy
-pip install imutils
 pip install opencv-contrib-python
+pip install bitarray
 ```
 
 The following script should now display the OpenCV version (Python 3 example):
@@ -24,4 +24,3 @@ print(f"{cv2.__version__}")  # Prints e.g. 4.3.0
 ```
 
 [OpenCV ReadTheDocs](https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_tutorials.html)
-
