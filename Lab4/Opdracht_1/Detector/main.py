@@ -66,5 +66,5 @@ class Detector:
 
 if __name__ == "__main__":
     d = Detector()
-    tracker = ScreenTracker(input_callback=d.determine_bits, tracker="csrt", fps_limit=16)
+    tracker = ScreenTracker(input_callback=d.determine_bits, tracker="csrt", fps_limit=8)
     tracker.start()

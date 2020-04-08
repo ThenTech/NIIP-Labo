@@ -1,0 +1,14 @@
+.input-box {
+    width: 100%;
+    font-size: 40px;
+}
+.btn {
+    width: 100%;
+    margin: 10px 0px;
+    font-size: 40px;
+}
+.transmit-box {
+    width: 100%;
+    height: 90vh;
+    background-color: white;
+}
