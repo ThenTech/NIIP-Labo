@@ -149,13 +149,16 @@ class ScreenTracker:
         line_height, lines = 15, 10
 
         if self.cropped is not None and self.cropped.size > 0:
-            # Apply filters
-            gray = cv2.cvtColor(self.cropped, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (5,5), 0)
-            ret, filtered = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-            if ret:
-                self.cropped = filtered
+            try:
+                # Apply filters
+                gray = cv2.cvtColor(self.cropped, cv2.COLOR_BGR2GRAY)
+                blur = cv2.GaussianBlur(gray, (5,5), 0)
+                ret, filtered = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            except:
+                pass
+            else:
+                if ret:
+                    self.cropped = filtered
 
             # Show new window with cropped image and data
             right, bottom = max(0, target_w - self.cropped.shape[1]), \
