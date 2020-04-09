@@ -2,23 +2,28 @@ var span = 250;
 
 function transmit() {
     const text = document.getElementById("text").value + "\n";
+    span = 1000 / document.getElementById("fps").value;
+    console.log(span);
     const bytes = stringToBytes(text);
     transmitBytes(bytes);
     console.log(bytes)
 }
-async function transmitBytes(bytes) {
+async function transmitBytes(bytes, str="") {
     //Send start
+    console.log("Send start byte");
     await sendByte("11110011");
+    console.log("Send text")
     for(var i = 0; i < bytes.length; i++) {
         await sendByte(bytes[i]);
     }
+    console.log("Reset background to white")
+    await sendBit(1);
 }
 function stringToBytes(str) {
     var utf8 = toUTF8Array(str);
     var bytes = []
     utf8.forEach(item => {
         const bin = toBinary(item);
-        console.log(bin)
         bytes.push(bin);
     })
     return bytes;
