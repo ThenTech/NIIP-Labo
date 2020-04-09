@@ -2,7 +2,7 @@ var span = 250;
 
 function transmit() {
     const text = document.getElementById("text").value + "\n";
-    span = 1000 / document.getElementById("fps").value;
+    span = 1000 / document.getElementById("fps").value * 2;
     console.log(span);
     const bytes = stringToBytes(text);
     transmitBytes(bytes);
