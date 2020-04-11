@@ -3,6 +3,8 @@
 
 ## Part 1:
 
+#### Detector
+
 ##### Install OpenCV
 
 Make sure the following packages are installed:
@@ -72,3 +74,7 @@ def callback(frame):
 	
 	# When an endbyte(s) is received, return the resulting string.
 ```
+
+#### Transmitter
+
+The transmitter web page is a simple html with some JavaScript code that changes the background colour from white to black according to the bits that need sending. At the top an input box for text is provided, as well as field to set the transmit bits per second. The demo is temporarily hosted [here](https://bramkelchtermans.be/lifi/). Just click or tap anywhere on the page to start the transmission.

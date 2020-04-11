@@ -6,13 +6,16 @@
     <meta name="description" content="Basic transmitter">
     <meta name="author" content="Bram Kelchtermans, William Thenaers">
     <link rel="stylesheet" href="style.css">
-    <script src="jquery.min.js"></script>
-    <script src="transmit.js"></script>
 </head>
 <body>
-    <input class="input-box" id="text"></input>
-    <label>FPS:</label>
-    <input class="input-box" id="fps" value="8"></input>
+    <div class="input-row">
+        <input class="input-box" id="text" placeholder="Enter some text here"></input>
+        <label>BPS:</label>
+        <input class="input-box" id="bps" value="4"></input>
+    </div>
     <div class="transmit-box" id="transmit-box" onclick="transmit()"></div>
+
+    <script src="jquery.min.js"></script>
+    <script src="transmit.js"></script>
 </body>
 </html>
