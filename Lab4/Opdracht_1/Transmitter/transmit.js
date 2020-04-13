@@ -4,15 +4,42 @@ let input_text  = document.getElementById("text");
 let input_bps   = document.getElementById("bps");
 let transmitter = document.getElementById("transmit-box");
 let clock = document.getElementById("clock-box");
-
-
+let mode_label = document.getElementById("mode-label");
+let clock_enabled = false;
+function toggleClock() {
+    if(!clock_enabled) {
+        // Show clock div
+        clock.style.display = "block";
+        // Set height of containers
+        transmitter.style.height = "45vh";
+        clock.style.height = "45vh";
+        // Change mode label
+        mode_label.innerText = "Clock"
+        // Hide bps box
+        input_bps.style.display = "none";
+        // Set boolean
+        clock_enabled = true;
+    } else {
+        // Show clock div
+        clock.style.display = "none";
+        // Set height of containers
+        transmitter.style.height = "90vh";
+        // Change mode label
+        mode_label.innerText = "BPS"
+        // Hide bps box
+        input_bps.style.display = "block";
+        // Set boolean
+        clock_enabled = false;
+    }
+}
 
 function transmit() {
     let start_symbol = "11110011";
     let stop_symbol  = stringToBytes('\n')[0];
 
     const text = input_text.value ;
-    span = 1000 / +input_bps.value;
+    if(!clock_enabled)
+        span = 1000 / +input_bps.value;
 
     console.log("Used span: " + span);
     var bytes = [start_symbol];
@@ -41,7 +68,7 @@ function transmitBytes(bytes) {
             delay = span + (span - diff)
 
             // Tick clock
-            if(clock != null) {
+            if(clock_enabled) {
                 var clock_color = "white";
                 if (clock.style.backgroundColor.localeCompare("white") == 0) {
                     clock_color = "black";
