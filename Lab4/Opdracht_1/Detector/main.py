@@ -1,8 +1,9 @@
-from screentracker import ScreenTracker
+from screentracker import ScreenTracker, HandlerData
 from bits import Bits
 from colours import *
 
 import numpy as np
+import cv2
 from bitarray import bitarray
 
 
@@ -32,6 +33,31 @@ class Detector:
         self.got_start = False
 
     def determine_bits(self, frame):
+        ret = HandlerData()
+
+        # Orient to portrait
+        h, w = frame.shape
+
+        if w > h:
+            # Turn 90°
+            frame = np.rot90(frame, axes=(1,0))
+            h, w = w, h
+
+        # Divide frame in top (clock) and bottom (data)
+        half = h // 2
+
+        clock = frame[0:half, 0:w]
+        data  = frame[half:h, 0:w]
+
+        cv2.imshow("clock", clock)
+        cv2.imshow("data", data)
+        cv2.imshow("frame", frame)
+
+
+        return ("", "")
+
+        ##### OLD METHOD
+
         # Callback gets called 16 times per second (16 fps limit)
         # Acquisition rate should be twice the input,
         # thus check the frame twice and if both have the same result,
@@ -95,5 +121,5 @@ class Detector:
 
 if __name__ == "__main__":
     d = Detector(start_bits="111100001111")
-    tracker = ScreenTracker(input_callback=d.determine_bits, reset_callback=d.reset, tracker="mil", fps_limit=8)
+    tracker = ScreenTracker(input_callback=d.determine_bits, reset_callback=d.reset, tracker="mil", fps_limit=60)
     tracker.start()
