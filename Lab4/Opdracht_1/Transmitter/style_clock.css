@@ -1,3 +1,4 @@
+
 body {
     overflow-y: hidden;
 }
@@ -28,11 +29,11 @@ label {
 }
 #clock-box {
     background-color: black;
-    display: none;
+
 }
 
 .transmit-box {
     width: 100%;
-    height: 90vh;
+    height: 45vh;
     background-color: white;
 }

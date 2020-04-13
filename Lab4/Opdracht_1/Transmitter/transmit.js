@@ -28,6 +28,8 @@ function transmit() {
 }
 function transmitBytes(bytes) {
     const bits = toBitArray(bytes);
+    // Add bit to reset background
+    bits.push("1")
     console.log(bits);
 
     for(let i = 0; i < bits.length; i++) {
@@ -38,17 +40,18 @@ function transmitBytes(bytes) {
             prev = Date.now()
             delay = span + (span - diff)
 
+            // Tick clock
+            if(clock != null) {
+                var clock_color = "white";
+                if (clock.style.backgroundColor.localeCompare("white") == 0) {
+                    clock_color = "black";
+                }
+                clock.style.backgroundColor = clock_color;
+            }
+
             var vis = (bit == '1' ? "white" : "black");
             transmitter.style.background = vis;
-    
-            // Tick clock
-            // var clock_color = "white";
-            // if (clock.style.backgroundColor.localeCompare("white") == 0) {
-            //     clock_color = "black";
-            // }
-            // clock.style.backgroundColor = clock_color;
-            
-    
+
             console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
         }, span * i)
     }
