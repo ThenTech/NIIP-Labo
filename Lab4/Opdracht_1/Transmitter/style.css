@@ -26,9 +26,12 @@ label {
     margin: 10px 0px;
     font-size: 40px;
 }
+#clock-box {
+    background-color: black;
+}
 
 .transmit-box {
     width: 100%;
-    height: 90vh;
+    height: 45vh;
     background-color: white;
 }

@@ -3,6 +3,7 @@ var prev = 0;
 let input_text  = document.getElementById("text");
 let input_bps   = document.getElementById("bps");
 let transmitter = document.getElementById("transmit-box");
+let clock = document.getElementById("clock-box");
 
 let start_symbol = "11110011";
 let stop_symbol  = stringToBytes('\n')[0];
@@ -46,7 +47,9 @@ function sendByte(byteStr) {
 
 function recursiveTransmit(chars, i = 0) {
     if (i < chars.length) {
-        return sendBit(chars[i]).then(_ => recursiveTransmit(chars, i + 1));
+        return sendBit(chars[i]).then(_ => {
+            recursiveTransmit(chars, i + 1)
+        });
     } else {
         return Promise.resolve();
     }
@@ -55,6 +58,7 @@ function recursiveTransmit(chars, i = 0) {
 function toBinary(val, pad_length=8) {
     return (val).toString(2).padStart(pad_length, '0');
 }
+
 
 function sendBit(bit) {
     // Recalc delay to keep in sync
@@ -65,6 +69,14 @@ function sendBit(bit) {
     return new Promise(resolve => setTimeout(function () {
         var vis = (bit == '1' ? "white" : "black");
         transmitter.style.background = vis;
+
+        // Tick clock
+        var clock_color = "white";
+        if (clock.style.backgroundColor.localeCompare("white") == 0) {
+            clock_color = "black";
+        }
+        clock.style.backgroundColor = clock_color;
+        
 
         console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
         resolve();
