@@ -49,12 +49,10 @@ class Detector:
         clock = frame[0:half, 0:w]
         data  = frame[half:h, 0:w]
 
-        cv2.imshow("clock", clock)
-        cv2.imshow("data", data)
-        cv2.imshow("frame", frame)
+        ret.add_screen()
 
 
-        return ("", "")
+        return ret
 
         ##### OLD METHOD
 
