@@ -44,7 +44,7 @@ class HandlerData:
         self.info = []
         self.screens = {}
 
-    def append_info(self, data):
+    def add_info(self, data):
         self.info.append(data)
 
     def add_screen(self, name, frame):
@@ -201,7 +201,7 @@ class ScreenTracker:
 
                 if isinstance(data, HandlerData):
                     if data.screens:
-                        all_frames = np.hstack(data.screens.values())
+                        all_frames = np.hstack(tuple(data.screens.values()))
 
                         right, bottom = max(0, target_w - all_frames.shape[1]), \
                                         max(0, target_h - all_frames.shape[0])
@@ -209,12 +209,12 @@ class ScreenTracker:
                         larger = cv2.copyMakeBorder(all_frames, top, bottom, left, right, cv2.BORDER_CONSTANT, None, (0, 0, 0))
 
                     total_width = 0
-                    for i, (name, frame) in enumerate(data.screens.values(), start=1):
+                    for i, (name, frame) in enumerate(data.screens.items(), start=1):
                         h, w = frame.shape
-                        total_width += w
+                        tw = w // 2 - (len(name) * 15) // 2
                         cv2.putText(larger, name,
-                                    (total_width + 10, h + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
+                                    (total_width + tw, h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                        total_width += w
 
                     for i, line in enumerate(data.info, start=1):
                         cv2.putText(larger, line,
