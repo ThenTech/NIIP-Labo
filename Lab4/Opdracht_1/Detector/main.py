@@ -70,6 +70,10 @@ class Detector:
         if self.prev_clk != clk:
             self.prev_clk = clk
             self.capturing_window = True
+
+            ret.add_info(f"clk={clk}, data={data}, Found start bits? {self.got_start}")
+            for d in self.received:
+                ret.add_info(str(d))
             return ret
 
         if self.capturing_window:
@@ -320,5 +324,5 @@ class Detector:
 
 if __name__ == "__main__":
     d = Detector(start_bits="11110011")
-    tracker = ScreenTracker(input_callback=d.determine_bits, reset_callback=d.reset, tracker="mil", fps_limit=8)
+    tracker = ScreenTracker(input_callback=d.determine_bits, reset_callback=d.reset, tracker="mil", fps_limit=60)
     tracker.start()
