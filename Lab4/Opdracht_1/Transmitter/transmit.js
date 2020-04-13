@@ -14,9 +14,7 @@ function toggleClock() {
         transmitter.style.height = "45vh";
         clock.style.height = "45vh";
         // Change mode label
-        mode_label.innerText = "Clock"
-        // Hide bps box
-        input_bps.style.display = "none";
+        mode_label.innerText = "Cl."
         // Set boolean
         clock_enabled = true;
     } else {
@@ -25,9 +23,7 @@ function toggleClock() {
         // Set height of containers
         transmitter.style.height = "90vh";
         // Change mode label
-        mode_label.innerText = "BPS"
-        // Hide bps box
-        input_bps.style.display = "block";
+        mode_label.innerText = "BPS";
         // Set boolean
         clock_enabled = false;
     }
@@ -38,8 +34,8 @@ function transmit() {
     let stop_symbol  = stringToBytes('\n')[0];
 
     const text = input_text.value ;
-    if(!clock_enabled)
-        span = 1000 / +input_bps.value;
+
+    span = 1000 / +input_bps.value;
 
     console.log("Used span: " + span);
     var bytes = [start_symbol];
@@ -67,6 +63,9 @@ function transmitBytes(bytes) {
             prev = Date.now()
             delay = span + (span - diff)
 
+            var vis = (bit == '1' ? "white" : "black");
+            transmitter.style.background = vis;
+
             // Tick clock
             if(clock_enabled) {
                 var clock_color = "white";
@@ -75,9 +74,6 @@ function transmitBytes(bytes) {
                 }
                 clock.style.backgroundColor = clock_color;
             }
-
-            var vis = (bit == '1' ? "white" : "black");
-            transmitter.style.background = vis;
 
             console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
         }, span * i)
