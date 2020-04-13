@@ -5,84 +5,71 @@ let input_bps   = document.getElementById("bps");
 let transmitter = document.getElementById("transmit-box");
 let clock = document.getElementById("clock-box");
 
-let start_symbol = "11110011";
-let stop_symbol  = stringToBytes('\n')[0];
+
 
 function transmit() {
-    prev = 0
-    const text = input_text.value;
-    span = 1000 / +input_bps.value;
-    console.log(span);
+    let start_symbol = "11110011";
+    let stop_symbol  = stringToBytes('\n')[0];
 
-    const bytes = stringToBytes(text);
-    console.log(`Send: ${start_symbol} + [${bytes}] + ${stop_symbol}, `
-              + `taking ${((1 + bytes.length + 1) * 8 * span) / 1000} seconds.`);
+    const text = input_text.value ;
+    span = 1000 / +input_bps.value;
+
+    console.log("Used span: " + span);
+    var bytes = [start_symbol];
+    const strBytes = stringToBytes(text);
+    for(let i = 0; i < strBytes.length; i++) {
+        bytes.push(strBytes[i]);
+    }
+    bytes.push(stop_symbol);
+
+    console.log(bytes);
+
     transmitBytes(bytes);
 }
+function transmitBytes(bytes) {
+    const bits = toBitArray(bytes);
+    console.log(bits);
 
-async function transmitBytes(bytes, str = "") {
-    //Send start
-    console.log("Send start");
-    await sendByte(start_symbol);
+    for(let i = 0; i < bits.length; i++) {
+        const bit = bits[i];
 
-    console.log("Send text")
-    for (var i = 0; i < bytes.length; i++) {
-        await sendByte(bytes[i]);
+        setTimeout(function () {
+            var diff = (prev == 0 ? span : Date.now() - prev);
+            prev = Date.now()
+            delay = span + (span - diff)
+
+            var vis = (bit == '1' ? "white" : "black");
+            transmitter.style.background = vis;
+    
+            // Tick clock
+            // var clock_color = "white";
+            // if (clock.style.backgroundColor.localeCompare("white") == 0) {
+            //     clock_color = "black";
+            // }
+            // clock.style.backgroundColor = clock_color;
+            
+    
+            console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
+        }, span * i)
     }
-
-    console.log("Send stop")
-    await sendByte(stop_symbol);
-
-    console.log("Reset background to white")
-    await sendBit(1);
+}
+function toBitArray(bytes) {
+    let result = [];
+    for(let i = 0; i < bytes.length; i++) {
+        const str = bytes[i];
+        for(let j = 0; j < str.length; j++) {
+            result.push(str[j]);
+        }
+    }
+    return result;
+}
+function toBinary(val, pad_length=8) {
+    return (val).toString(2).padStart(pad_length, '0');
 }
 
 function stringToBytes(str) {
     return toUTF8Array(str).map(item => toBinary(item))
 }
-
-function sendByte(byteStr) {
-    return recursiveTransmit(byteStr)
-}
-
-function recursiveTransmit(chars, i = 0) {
-    if (i < chars.length) {
-        return sendBit(chars[i]).then(_ => {
-            recursiveTransmit(chars, i + 1)
-        });
-    } else {
-        return Promise.resolve();
-    }
-}
-
-function toBinary(val, pad_length=8) {
-    return (val).toString(2).padStart(pad_length, '0');
-}
-
-
-function sendBit(bit) {
-    // Recalc delay to keep in sync
-    var diff = (prev == 0 ? span : Date.now() - prev);
-    prev = Date.now()
-    delay = span + (span - diff)
-
-    return new Promise(resolve => setTimeout(function () {
-        var vis = (bit == '1' ? "white" : "black");
-        transmitter.style.background = vis;
-
-        // Tick clock
-        var clock_color = "white";
-        if (clock.style.backgroundColor.localeCompare("white") == 0) {
-            clock_color = "black";
-        }
-        clock.style.backgroundColor = clock_color;
-        
-
-        console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
-        resolve();
-    }, delay));
-}
-
 function toUTF8Array(str) {
     let utf8 = [];
 
