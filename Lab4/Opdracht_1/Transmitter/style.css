@@ -7,11 +7,15 @@ body {
 }
 
 .input-box {
-    width: 80%;
+    width: 90%;
     height: 10vh;
     font-size: 9vh;
 }
-
+.img-btn {
+    width: 10vh;
+    height: 10vh;
+    margin: 0 10px;
+}
 #bps {
     width: 10%;
 }
@@ -19,6 +23,7 @@ body {
 label {
     font-size: 5vh;
     line-height: 200%;
+    margin: 10px;
 }
 
 .btn {
@@ -35,4 +40,12 @@ label {
     width: 100%;
     height: 90vh;
     background-color: white;
+}
+#mode {
+    margin: 10px;
+    font-size: 5vh;
+    width: 50%;
+}
+.settings-row {
+    display: none;
 }

@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <title>Basic transmitter</title>
@@ -7,11 +8,25 @@
     <meta name="author" content="Bram Kelchtermans, William Thenaers">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="input-row">
         <input class="input-box" id="text" placeholder="Enter some text here"></input>
-        <label id="mode-label" onclick="toggleClock()">BPS:</label>
-        <input class="input-box" id="bps" value="4"></input>
+        <img class="img-btn" src="settings.png" alt="Smiley face" onclick="toggleSettings()">
+
+    </div>
+    <div class="settings-row" id="settings-block">
+        <div>
+            <label id="mode-label" onclick="toggleClock()">BPS:</label>
+            <input class="input-box" id="bps" value="4"></input>
+        </div>
+        <label for="cars">Mode:</label>
+
+        <select id="mode" onchange="changeMode()">
+            <option value="raw">Basic</option>
+            <option value="clock">Clock</option>
+            <option value="brightness">Brightness</option>
+        </select>
     </div>
     <div class="transmit-box" id="clock-box" onclick="transmit()"></div>
     <div class="transmit-box" id="transmit-box" onclick="transmit()"></div>
@@ -19,4 +34,5 @@
     <script src="jquery.min.js"></script>
     <script src="transmit.js"></script>
 </body>
+
 </html>
