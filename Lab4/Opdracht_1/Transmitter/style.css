@@ -5,6 +5,10 @@ body {
 .input-row {
     display: flex;
 }
+input#hamming_check {
+    margin: 10px;
+    transform: scale(3);
+}
 
 .input-box {
     width: 90%;

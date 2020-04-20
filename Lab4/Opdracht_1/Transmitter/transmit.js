@@ -8,8 +8,13 @@ let mode_label = document.getElementById("mode-label");
 let settings_block = document.getElementById("settings-block");
 let mode_select = document.getElementById("mode");
 let settings_shown = false;
+let clock_val = false;
+/**
+ * Hide or show the clock div
+ * @param {*} clock_enabled 
+ */
 function toggleClock(clock_enabled) {
-    if (!clock_enabled) {
+    if (clock_enabled) {
         // Show clock div
         clock.style.display = "block";
         // Set height of containers
@@ -24,15 +29,21 @@ function toggleClock(clock_enabled) {
         mode_label.innerText = "BPS";
     }
 }
+/**
+ * Check if the clock div has to be enabled
+ */
 function changeMode() {
     let mode = mode_select.value;
-    if (mode.localeCompare("clock")) {
+    if (mode.localeCompare("clock") == 0) {
         toggleClock(true);
     } else {
         toggleClock(false);
     }
 }
 
+/**
+ * Show / hide the settings section
+ */
 function toggleSettings() {
     var disp = "block";
     if (settings_shown) {
@@ -42,6 +53,9 @@ function toggleSettings() {
     settings_shown = !settings_shown;
 }
 
+/**
+ * Transmit the bytes via LiFi
+ */
 function transmit() {
     let start_symbol = "11110011";
     let stop_symbol = stringToBytes('\n')[0];
@@ -62,6 +76,10 @@ function transmit() {
 
     transmitBytes(bytes);
 }
+/**
+ * Basic transmission of the bytes
+ * @param {} bytes 
+ */
 function transmitBytes_basic(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -83,6 +101,10 @@ function transmitBytes_basic(bytes) {
         }, span * i)
     }
 }
+/**
+ * Transmission of the bytes with clock enabled (extra div)
+ * @param {} bytes 
+ */
 function transmitBytes_clock(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -101,16 +123,22 @@ function transmitBytes_clock(bytes) {
             transmitter.style.background = vis;
 
             var clock_color = "white";
-            if (clock.style.backgroundColor.localeCompare("white") == 0) {
+            if(clock_val) {
                 clock_color = "black";
             }
             clock.style.backgroundColor = clock_color;
+            clock_val = !clock_val;
 
 
             console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
         }, span * i)
     }
 }
+/**
+ * Transmission of bytes by transmitting 
+ * 2 bits at a time
+ * @param {*} bytes 
+ */
 function transmitBytes_brightness(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -139,7 +167,48 @@ function transmitBytes_brightness(bytes) {
         }, span * i)
     }
 }
+/**
+ * Transmission of the bytes by using the 
+ * brightness as a clock (no extra div)
+ * @param {*} bytes 
+ */
+function transmitBytes_brightness_clock(bytes) {
+    const bits = toBitArray(bytes);
+    // Add bit to reset background
+    bits.push("1")
+    console.log(bits.length);
 
+    for (let i = 0; i < bits.length; i ++) {
+        let clock_bit = "0";
+        if(clock_val) {
+            clock_bit = "1";
+        }
+        clock_val = !clock_val;
+        const bit = clock_bit + bits[i];
+
+
+        setTimeout(function () {
+            var digit = parseInt(bit, 2);
+            digit *= 85;
+
+            console.log(digit)
+            var diff = (prev == 0 ? span : Date.now() - prev);
+            prev = Date.now()
+            delay = span + (span - diff)
+
+            var vis = "rgb(" + digit + ", " + digit + ", " + digit + ")";
+            transmitter.style.background = vis;
+
+
+            console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
+        }, span * i)
+    }
+}
+
+/**
+ * Selects the right procedure to transmit the bytes
+ * @param {*} bytes 
+ */
 function transmitBytes(bytes) {
     const mode = mode_select.value;
     if (mode.localeCompare("basic") == 0) {
@@ -151,24 +220,49 @@ function transmitBytes(bytes) {
     else if (mode.localeCompare("brightness") == 0) {
         transmitBytes_brightness(bytes);
     }
+    else if(mode.localeCompare("br_clock") == 0) {
+        transmitBytes_brightness_clock(bytes);
+    }
 }
+/**
+ * Convert the bytes to a bit array
+ * Apply Hamming if enabled
+ * @param {*} bytes 
+ */
 function toBitArray(bytes) {
     let result = [];
-    for (let i = 0; i < bytes.length; i++) {
-        const str = bytes[i];
-        for (let j = 0; j < str.length; j++) {
-            result.push(str[j]);
-        }
+    const hamming = document.getElementById("hamming_check").checked;
+    let str = "";
+    for(let i = 0; i < bytes.length; i++) {
+        str += bytes[i];
+    }
+    if(hamming) {
+        str = hammingEncode(str);
+    }
+    for(let i = 0; i < str.length; i++) {
+        result.push(str[i])
     }
     return result;
 }
+/**
+ * Convert to binary
+ * @param {*} val 
+ * @param {*} pad_length 
+ */
 function toBinary(val, pad_length = 8) {
     return (val).toString(2).padStart(pad_length, '0');
 }
-
+/**
+ * Convert string to bytes
+ * @param {*} str 
+ */
 function stringToBytes(str) {
     return toUTF8Array(str).map(item => toBinary(item))
 }
+/**
+ * Appy UTF8 encoding to a string
+ * @param {*} str 
+ */
 function toUTF8Array(str) {
     let utf8 = [];
 
@@ -200,4 +294,59 @@ function toUTF8Array(str) {
     }
 
     return utf8;
+}
+/**
+ * Encode a bytestring with Hamming
+ * @param {*} input 
+ */
+function hammingEncode(input) {
+	if (typeof input !== 'string' || input.match(/[^10]/)) {
+		return console.error('hamming-code error: input should be binary string, for example "101010"');
+	}
+
+	var output = input;
+	var controlBitsIndexes = [];
+	var controlBits = [];
+	var l = input.length;
+	var i = 1;
+	var key, j, arr, temp, check;
+
+	while (l / i >= 1) {
+		controlBitsIndexes.push(i);
+		i *= 2;
+	}
+
+	for (j = 0; j < controlBitsIndexes.length; j++) {
+		key = controlBitsIndexes[j];
+		arr = output.slice(key - 1).split('');
+		temp = chunk(arr, key);
+		check = (temp.reduce(function (prev, next, index) {
+			if (!(index % 2)) {
+				prev = prev.concat(next);
+			}
+			return prev;
+		}, []).reduce(function (prev, next) { return +prev + +next }, 0) % 2) ? 1 : 0;
+		output = output.slice(0, key - 1) + check + output.slice(key - 1);
+		if (j + 1 === controlBitsIndexes.length && output.length / (key * 2) >= 1) {
+			controlBitsIndexes.push(key * 2);
+		}
+	}
+
+	return output;
+}
+
+/**
+ * chunk - split array into chunks
+ * @param {Array} arr - array
+ * @param {Number} size - chunk size
+ * @returns {Array} - chunked array
+ */
+function chunk(arr, size) {
+	var chunks = [],
+	i = 0,
+	n = arr.length;
+	while (i < n) {
+		chunks.push(arr.slice(i, i += size));
+	}
+	return chunks;
 }
