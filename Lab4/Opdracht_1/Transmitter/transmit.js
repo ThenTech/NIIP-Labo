@@ -9,6 +9,10 @@ let settings_block = document.getElementById("settings-block");
 let mode_select = document.getElementById("mode");
 let settings_shown = false;
 let clock_val = false;
+/**
+ * Hide or show the clock div
+ * @param {*} clock_enabled 
+ */
 function toggleClock(clock_enabled) {
     if (clock_enabled) {
         // Show clock div
@@ -25,6 +29,9 @@ function toggleClock(clock_enabled) {
         mode_label.innerText = "BPS";
     }
 }
+/**
+ * Check if the clock div has to be enabled
+ */
 function changeMode() {
     let mode = mode_select.value;
     if (mode.localeCompare("clock") == 0) {
@@ -34,6 +41,9 @@ function changeMode() {
     }
 }
 
+/**
+ * Show / hide the settings section
+ */
 function toggleSettings() {
     var disp = "block";
     if (settings_shown) {
@@ -43,6 +53,9 @@ function toggleSettings() {
     settings_shown = !settings_shown;
 }
 
+/**
+ * Transmit the bytes via LiFi
+ */
 function transmit() {
     let start_symbol = "11110011";
     let stop_symbol = stringToBytes('\n')[0];
@@ -63,6 +76,10 @@ function transmit() {
 
     transmitBytes(bytes);
 }
+/**
+ * Basic transmission of the bytes
+ * @param {} bytes 
+ */
 function transmitBytes_basic(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -84,6 +101,10 @@ function transmitBytes_basic(bytes) {
         }, span * i)
     }
 }
+/**
+ * Transmission of the bytes with clock enabled (extra div)
+ * @param {} bytes 
+ */
 function transmitBytes_clock(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -113,6 +134,11 @@ function transmitBytes_clock(bytes) {
         }, span * i)
     }
 }
+/**
+ * Transmission of bytes by transmitting 
+ * 2 bits at a time
+ * @param {*} bytes 
+ */
 function transmitBytes_brightness(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -141,6 +167,11 @@ function transmitBytes_brightness(bytes) {
         }, span * i)
     }
 }
+/**
+ * Transmission of the bytes by using the 
+ * brightness as a clock (no extra div)
+ * @param {*} bytes 
+ */
 function transmitBytes_brightness_clock(bytes) {
     const bits = toBitArray(bytes);
     // Add bit to reset background
@@ -174,6 +205,10 @@ function transmitBytes_brightness_clock(bytes) {
     }
 }
 
+/**
+ * Selects the right procedure to transmit the bytes
+ * @param {*} bytes 
+ */
 function transmitBytes(bytes) {
     const mode = mode_select.value;
     if (mode.localeCompare("basic") == 0) {
@@ -189,6 +224,11 @@ function transmitBytes(bytes) {
         transmitBytes_brightness_clock(bytes);
     }
 }
+/**
+ * Convert the bytes to a bit array
+ * Apply Hamming if enabled
+ * @param {*} bytes 
+ */
 function toBitArray(bytes) {
     let result = [];
     const hamming = document.getElementById("hamming_check").checked;
@@ -204,13 +244,25 @@ function toBitArray(bytes) {
     }
     return result;
 }
+/**
+ * Convert to binary
+ * @param {*} val 
+ * @param {*} pad_length 
+ */
 function toBinary(val, pad_length = 8) {
     return (val).toString(2).padStart(pad_length, '0');
 }
-
+/**
+ * Convert string to bytes
+ * @param {*} str 
+ */
 function stringToBytes(str) {
     return toUTF8Array(str).map(item => toBinary(item))
 }
+/**
+ * Appy UTF8 encoding to a string
+ * @param {*} str 
+ */
 function toUTF8Array(str) {
     let utf8 = [];
 
@@ -243,6 +295,10 @@ function toUTF8Array(str) {
 
     return utf8;
 }
+/**
+ * Encode a bytestring with Hamming
+ * @param {*} input 
+ */
 function hammingEncode(input) {
 	if (typeof input !== 'string' || input.match(/[^10]/)) {
 		return console.error('hamming-code error: input should be binary string, for example "101010"');
