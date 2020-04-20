@@ -20,14 +20,18 @@
             <label id="mode-label" onclick="toggleClock()">BPS:</label>
             <input class="input-box" id="bps" value="4"></input>
         </div>
-        <label for="cars">Mode:</label>
+        
+        <div>
+            <label for="cars">Mode:</label>
+            <select id="mode" onchange="changeMode()">
+                <option value="basic">Basic</option>
+                <option value="clock">Clock</option>
+                <option value="brightness">Brightness</option>
+                <option value="br_clock">Brightness clock</option>
+            </select>
+        </div>
 
-        <select id="mode" onchange="changeMode()">
-            <option value="basic">Basic</option>
-            <option value="clock">Clock</option>
-            <option value="brightness">Brightness</option>
-            <option value="br_clock">Brightness clock</option>
-        </select>
+        <input type="checkbox" id="hamming_check" name="hamming"><label id="check_label" for="hamming">Enable hamming</label><br>
     </div>
     <div class="transmit-box" id="clock-box" onclick="transmit()"></div>
     <div class="transmit-box" id="transmit-box" onclick="transmit()"></div>
