@@ -51,6 +51,22 @@ class HandlerData:
         self.screens[name] = frame
 
 
+class StaticTracker:
+    def __init__(self):
+        super().__init__()
+        self.box = None
+
+    def init(self, image, boundingBox):
+        self.box = boundingBox
+
+    def update(self, image):
+        return True, self.box
+
+    @classmethod
+    def create(cls, *args):
+        return cls()
+
+
 class ScreenTracker:
     OPENCV_OBJECT_TRACKERS = {
         "csrt"      : cv2.TrackerCSRT_create,
@@ -59,7 +75,8 @@ class ScreenTracker:
         "mil"       : cv2.TrackerMIL_create,
         "tld"       : cv2.TrackerTLD_create,
         "medianflow": cv2.TrackerMedianFlow_create,
-        "mosse"     : cv2.TrackerMOSSE_create
+        "mosse"     : cv2.TrackerMOSSE_create,
+        "static"    : StaticTracker.create
     }
 
     def __init__(self, input_callback=None, reset_callback=None, tracker="kcf", fps_limit=16, select_key='s', exit_key='q', reset_key='r'):
@@ -67,7 +84,7 @@ class ScreenTracker:
 
         self.cam          = Webcam(exit_key=exit_key)
         self.tracker      = None
-        self.tracker_name = tracker
+        self.tracker_name = tracker or "static"
 
         self.width, self.height = 0, 0
         self.box       = None
@@ -79,7 +96,7 @@ class ScreenTracker:
         self.dropped_frames = 0
 
         self._select_key    = select_key
-        self._reset_key    = reset_key
+        self._reset_key     = reset_key
         self.input_callback = input_callback
         self.reset_callback = reset_callback
 
@@ -171,31 +188,10 @@ class ScreenTracker:
         top, bottom, left, right = 0, 0, 0, 0
         target_w, target_h = 500, 500
         line_height, lines = 15, 10
+        offset = target_h - ((lines + 1) * line_height)
 
         if self.cropped is not None and self.cropped.size > 0:
-            ret = False
-            try:
-                # Apply filters
-                gray = cv2.cvtColor(self.cropped, cv2.COLOR_BGR2GRAY)
-                blur = cv2.GaussianBlur(gray, (5,5), 0)
-                ret, filtered = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            except:
-                pass
-            else:
-                if ret:
-                    self.cropped = filtered
-
-            # Show new window with cropped image and data
-            right, bottom = max(0, target_w - self.cropped.shape[1]), \
-                            max(0, target_h - self.cropped.shape[0])
-
-            larger = cv2.copyMakeBorder(self.cropped, top, bottom, left, right, cv2.BORDER_CONSTANT, None, (0, 0, 0))
-
-            offset = target_h - ((lines + 1) * line_height)
-            cv2.putText(larger, "Input",
-                        (10, offset + 0 * line_height), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
-            if ret and self.input_callback:
+            if self.input_callback:
                 # Look at brightness etc
                 data = self.input_callback(self.cropped)
 
@@ -210,8 +206,12 @@ class ScreenTracker:
 
                     total_width = 0
                     for i, (name, frame) in enumerate(data.screens.items(), start=1):
-                        h, w = frame.shape
-                        tw = w // 2 - (len(name) * 15) // 2
+                        h, w    = frame.shape[0], frame.shape[1]
+                        (fw, fh), base = cv2.getTextSize(name, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                        if not fw: fw = len(name) * 15
+
+                        tw = (w // 2) - (fw // 2)
+
                         cv2.putText(larger, name,
                                     (total_width + tw, h + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
                         total_width += w
@@ -219,6 +219,15 @@ class ScreenTracker:
                     for i, line in enumerate(data.info, start=1):
                         cv2.putText(larger, line,
                                     (10, offset + i * line_height), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+            else:
+                # Show new window with cropped image and data
+                right, bottom = max(0, target_w - self.cropped.shape[1]), \
+                                max(0, target_h - self.cropped.shape[0])
+
+                larger = cv2.copyMakeBorder(self.cropped, top, bottom, left, right, cv2.BORDER_CONSTANT, None, (0, 0, 0))
+
+                cv2.putText(larger, "Input",
+                            (10, offset + 0 * line_height), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
             cv2.imshow("Data input", larger)
 
