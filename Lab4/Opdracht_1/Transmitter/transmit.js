@@ -8,8 +8,9 @@ let mode_label = document.getElementById("mode-label");
 let settings_block = document.getElementById("settings-block");
 let mode_select = document.getElementById("mode");
 let settings_shown = false;
+let clock_val = false;
 function toggleClock(clock_enabled) {
-    if (!clock_enabled) {
+    if (clock_enabled) {
         // Show clock div
         clock.style.display = "block";
         // Set height of containers
@@ -26,7 +27,7 @@ function toggleClock(clock_enabled) {
 }
 function changeMode() {
     let mode = mode_select.value;
-    if (mode.localeCompare("clock")) {
+    if (mode.localeCompare("clock") == 0) {
         toggleClock(true);
     } else {
         toggleClock(false);
@@ -101,10 +102,11 @@ function transmitBytes_clock(bytes) {
             transmitter.style.background = vis;
 
             var clock_color = "white";
-            if (clock.style.backgroundColor.localeCompare("white") == 0) {
+            if(clock_val) {
                 clock_color = "black";
             }
             clock.style.backgroundColor = clock_color;
+            clock_val = !clock_val;
 
 
             console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
@@ -139,6 +141,38 @@ function transmitBytes_brightness(bytes) {
         }, span * i)
     }
 }
+function transmitBytes_brightness_clock(bytes) {
+    const bits = toBitArray(bytes);
+    // Add bit to reset background
+    bits.push("1")
+    console.log(bits.length);
+
+    for (let i = 0; i < bits.length; i ++) {
+        let clock_bit = "0";
+        if(clock_val) {
+            clock_bit = "1";
+        }
+        clock_val = !clock_val;
+        const bit = clock_bit + bits[i];
+
+
+        setTimeout(function () {
+            var digit = parseInt(bit, 2);
+            digit *= 85;
+
+            console.log(digit)
+            var diff = (prev == 0 ? span : Date.now() - prev);
+            prev = Date.now()
+            delay = span + (span - diff)
+
+            var vis = "rgb(" + digit + ", " + digit + ", " + digit + ")";
+            transmitter.style.background = vis;
+
+
+            console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
+        }, span * i)
+    }
+}
 
 function transmitBytes(bytes) {
     const mode = mode_select.value;
@@ -150,6 +184,9 @@ function transmitBytes(bytes) {
     }
     else if (mode.localeCompare("brightness") == 0) {
         transmitBytes_brightness(bytes);
+    }
+    else if(mode.localeCompare("br_clock") == 0) {
+        transmitBytes_brightness_clock(bytes);
     }
 }
 function toBitArray(bytes) {
