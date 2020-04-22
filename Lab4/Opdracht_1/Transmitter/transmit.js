@@ -330,7 +330,7 @@ function toUTF8Array(str) {
  * @returns {String} - encoded binary string
  */
 function hammingEncode(input) {
-	if (typeof input !== 'string' || input.match(/[^10]/)) {
+	/*if (typeof input !== 'string' || input.match(/[^10]/)) {
 		return console.error('hamming-code error: input should be binary string, for example "101010"');
 	}
 
@@ -362,7 +362,18 @@ function hammingEncode(input) {
 		}
 	}
 
-	return output;
+    return output;*/
+    const d1 = input[0];
+    const d2 = input[1];
+    const d3 = input[2];
+    const d4 = input[3];
+
+    const p1 = parityBit(d1 + d2 + d4);
+    const p2 = parityBit(d1 + d3 + d4);
+    const p3 = parityBit(d2 + d3 + d4);
+
+    result = p1 + p2 + d1 + p3 + d2 + d3 + d4;
+    return result;
 }
 
 
