@@ -257,7 +257,7 @@ function hammingEncodeData(data, addExtra = false) {
         }
         let encoded = hammingEncode(str)
         if(addExtra) {
-            encoded += parityBit(encoded)
+            encoded = parityBit(encoded) + encoded
         }
         console.log("Encoding '" + str + "' gave '" + encoded + "'")
         result += encoded;
