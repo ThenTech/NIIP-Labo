@@ -5,11 +5,13 @@ body {
 .input-row {
     display: flex;
 }
-input#hamming_check {
+input.check{
     margin: 10px;
     transform: scale(3);
 }
-
+#check_label {
+    margin-right: 50px;
+}
 .input-box {
     width: 90%;
     height: 10vh;

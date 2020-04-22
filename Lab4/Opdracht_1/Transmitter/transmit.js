@@ -237,12 +237,41 @@ function toBitArray(bytes) {
         str += bytes[i];
     }
     if(hamming) {
-        str = hammingEncode(str);
+        const extraParity = document.getElementById("parity_check").checked;
+        str = hammingEncodeData(str, extraParity);
     }
     for(let i = 0; i < str.length; i++) {
         result.push(str[i])
     }
     return result;
+}
+function hammingEncodeData(data, addExtra = false) {
+    if(data.length % 4 != 0) {
+        console.log("Can't encode nibbles")
+    }
+    let result = ""
+    for(let i = 0; i < data.length; i+=4) {
+        let str = "";
+        for(let j = i; j < i + 4; j++) {
+            str += data[j]
+        }
+        let encoded = hammingEncode(str)
+        if(addExtra) {
+            encoded += parityBit(encoded)
+        }
+        console.log("Encoding '" + str + "' gave '" + encoded + "'")
+        result += encoded;
+    }
+    return result
+}
+function parityBit(bin='', parity = 'e'){
+    function bitCount(bin){
+        return (bin.match(/1/g) || []).length;
+    }
+    
+    let isEven = bitCount(bin) % 2 === 0;
+    if(parity.match(/^e$|^even$/i)) return isEven ? '0' : '1';
+    return isEven ? '1' : '0';
 }
 /**
  * Convert to binary
@@ -296,8 +325,9 @@ function toUTF8Array(str) {
     return utf8;
 }
 /**
- * Encode a bytestring with Hamming
- * @param {*} input 
+ * hammingEncode - encode binary string input with hamming algorithm
+ * @param {String} input - binary string, '10101'
+ * @returns {String} - encoded binary string
  */
 function hammingEncode(input) {
 	if (typeof input !== 'string' || input.match(/[^10]/)) {
@@ -335,6 +365,99 @@ function hammingEncode(input) {
 	return output;
 }
 
+
+/**
+ * hammingPureDecode - just removes from input parity check bits
+ * @param {String} input - binary string, '10101'
+ * @returns {String} - decoded binary string
+ */
+function hammingPureDecode(input) {
+	if (typeof input !== 'string' || input.match(/[^10]/)) {
+		return console.error('hamming-code error: input should be binary string, for example "101010"');
+	}
+
+	var controlBitsIndexes = [];
+	var l = input.length;
+	var originCode = input;
+	var hasError = false;
+	var inputFixed, i;
+	
+	i = 1;
+	while (l / i >= 1) {
+		controlBitsIndexes.push(i);
+		i *= 2;
+	}
+
+	controlBitsIndexes.forEach(function (key, index) {
+		originCode = originCode.substring(0, key - 1 - index) + originCode.substring(key - index);
+	});
+
+	return originCode;
+}
+
+/**
+ * hammingDecode - decodes encoded binary string, also try to correct errors
+ * @param {String} input - binary string, '10101'
+ * @returns {String} - decoded binary string
+ */
+function hammingDecode(input) {
+	if (typeof input !== 'string' || input.match(/[^10]/)) {
+		return console.error('hamming-code error: input should be binary string, for example "101010"');
+	}
+
+	var controlBitsIndexes = [];
+	var sum = 0;
+	var l = input.length;
+	var i = 1;
+	var output = hammingPureDecode(input);
+	var inputFixed = hammingEncode(output);
+
+
+	while (l / i >= 1) {
+		controlBitsIndexes.push(i);
+		i *= 2;
+	}
+
+	controlBitsIndexes.forEach(function (i) {
+		if (input[i] !== inputFixed[i]) {
+			sum += i;
+		}
+	});
+
+	if (sum) {
+		output[sum - 1] === '1' 
+			? output = replaceCharacterAt(output, sum - 1, '0')
+			: output = replaceCharacterAt(output, sum - 1, '1');
+	}
+	return output;
+}
+
+/**
+ * hammingCheck - check if encoded binary string has errors, returns true if contains error
+ * @param {String} input - binary string, '10101'
+ * @returns {Boolean} - hasError
+ */
+function hammingCheck(input) {
+	if (typeof input !== 'string' || input.match(/[^10]/)) {
+		return console.error('hamming-code error: input should be binary string, for example "101010"');
+	}
+
+	var inputFixed = hammingEncode(hammingPureDecode(input));
+
+	return hasError = !(inputFixed === input);
+}
+
+/**
+ * replaceCharacterAt - replace character at index
+ * @param {String} str - string
+ * @param {Number} index - index
+ * @param {String} character - character 
+ * @returns {String} - string
+ */
+function replaceCharacterAt(str, index, character) {
+  return str.substr(0, index) + character + str.substr(index+character.length);
+}
+
 /**
  * chunk - split array into chunks
  * @param {Array} arr - array
@@ -350,3 +473,4 @@ function chunk(arr, size) {
 	}
 	return chunks;
 }
+
