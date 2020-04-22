@@ -105,6 +105,8 @@ class ScreenTracker:
             self.cam.capture_start()
             self.width, self.height = self.cam.width, self.cam.height
             self.cam.fps = self.fps_limit
+            self.cam.fps = self.fps_limit
+            self.cam.fps = self.fps_limit
 
             while(True):
                 # Capture frame-by-frame

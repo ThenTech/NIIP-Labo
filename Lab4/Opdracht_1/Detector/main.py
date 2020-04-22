@@ -28,7 +28,7 @@ class Detector:
 
     def __init__(self, mode=0, true_ratio=0.5, start_bits=bitarray("110011"),
                        stop_bytes=b"\n", window_size=2, window_positive=2,
-                       brighness_levels=4, bright_dev_percent=0.4, brighness_w_clk=False):
+                       brighness_levels=4, bright_dev_percent=0.5, brighness_w_clk=False):
         super().__init__()
 
         self.mode = mode if mode in Detector.MODES else 1
@@ -37,6 +37,8 @@ class Detector:
             1: self._mode_clk_data,
             2: self._mode_brightness_mod,
         }
+
+        self._log(f"Using mode: {Detector.MODES[self.mode]}")
 
         self.true_ratio = true_ratio or 0.5
         self.start_bits = start_bits if isinstance(start_bits, bitarray) else bitarray(start_bits)
@@ -90,14 +92,25 @@ class Detector:
             ranges.append(max(lower, 0))
             ranges.append(min(upper, 255))
 
+
+        ranges = [
+               0,  30,
+              30, 128,
+             128, 230,
+             230, 255
+        ]
+
         self.brightness_levels = tuple(ranges)
+        self._log(f"Brightness levels: " \
+                 + ", ".join(f"{self.brightness_levels[i], self.brightness_levels[i+1]}" \
+                                for i in range(0, len(self.brightness_levels), 2)))
 
         bits = int(math.ceil(math.log(self.levels, 2)))
         self.brightness_values = { i: p for i, p in enumerate(itertools.product((False, True), repeat=bits)) }
 
-        if not is_ascending(self.brightness_values):
+        if not is_ascending(self.brightness_levels):
             raise Exception(f"Brightness values overlap! Decrease levels ({self.levels}) " + \
-                            f"or decrease deviation percentage ({self.self.bright_dev_percent})!")
+                            f"or decrease deviation percentage ({self.bright_dev_percent})!")
 
     def _filter_brightness(self, frame, lvl=0):
         """
@@ -127,7 +140,7 @@ class Detector:
             # level_check.append(((lower <= blur) & (blur <= upper)).sum())
             level_check.append(lower <= average <= upper)
 
-        return blur, np.array(level_check)
+        return blur, average, np.array(level_check)
 
 
         # Test
@@ -296,10 +309,10 @@ class Detector:
     def _mode_brightness_mod(self, frame):
         ret = HandlerData()
 
-        frame, levels = self._filter_brightness(frame)
+        frame, avg, levels = self._filter_brightness(frame)
 
         ret.add_screen("View", frame)
-        ret.add_info(f"Levels={list(levels)}")
+        ret.add_info(f"Avg={int(avg)}, Levels={list(levels)}")
 
         # Get highest level
         max_level = np.argmax(levels)
@@ -308,14 +321,30 @@ class Detector:
         data = self.brightness_values[max_level]
         ret.add_info(f"Values={data}, Found start bits? {self.got_start}")
 
+        # if self.brighness_w_clk:
+        #     clk, data = data[0], data[1:]
+
+        #     if self.prev_clk != clk:
+        #         self.prev_clk = clk
+        #         self.data.extend(data)
+        # else:
+        #     self.data.extend(data)
+
+
         if self.brighness_w_clk:
             clk, data = data[0], data[1:]
 
             if self.prev_clk != clk:
                 self.prev_clk = clk
+                self.capturing_window = True
+            elif self.capturing_window:
+                self.capturing_window = False
                 self.data.extend(data)
         else:
-            self.data.extend(data)
+            if self.capturing_window:
+                self.data.extend(data)
+            self.capturing_window = not self.capturing_window
+
 
         if not self.got_start:
             start_length = self.start_bits.length()
@@ -358,7 +387,7 @@ class Detector:
         return ret
 
 if __name__ == "__main__":
-    mode, start_bits, brightness_clk, fps_limit = 3, "11110011", False, 60
+    mode, start_bits, brightness_clk, fps_limit = 3, "11110011", False, 30
 
     if len(sys.argv) > 2 and sys.argv[1] in ("-m", "--mode"):
         mode = int(sys.argv[2])
