@@ -258,7 +258,9 @@ function hammingEncodeData(data, addExtra = false) {
     }
 
     let result = ""
-    for(let i = 0; i < data.length; i+=4) {
+    //Don't encode start byte
+    result += data.substring(0,8);
+    for(let i = 8; i < data.length; i+=4) {
         let str = "";
         for(let j = i; j < i + 4; j++) {
             str += data[j]
