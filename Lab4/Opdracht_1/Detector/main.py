@@ -1,6 +1,7 @@
 from screentracker import ScreenTracker, HandlerData
 from bits import Bits
 from colours import *
+from hamming import Hamming
 
 import numpy as np
 import cv2
@@ -28,7 +29,8 @@ class Detector:
 
     def __init__(self, mode=0, true_ratio=0.5, start_bits=bitarray("110011"),
                        stop_bytes=b"\n", window_size=2, window_positive=2,
-                       brighness_levels=4, bright_dev_percent=0.5, brighness_w_clk=False):
+                       brighness_levels=4, bright_dev_percent=0.5, brighness_w_clk=False,
+                       hamming=False, hamming_parity=False):
         super().__init__()
 
         self.mode = mode if mode in Detector.MODES else 1
@@ -60,9 +62,12 @@ class Detector:
         self.brightness_levels  = tuple()
         self.brightness_values  = {}
         self.brighness_w_clk    = brighness_w_clk
-        self._prepare_brightness_levels()
+        if self.mode == 2:
+            self._prepare_brightness_levels()
 
-        self.ct, self.dt = bitarray(), bitarray()
+        self.hamming = hamming
+        self.ham_par = hamming_parity
+        self.hamming_buffer = bitarray()
 
 
     def _log(self, msg):
@@ -71,6 +76,7 @@ class Detector:
     def reset(self):
         self.data   = bitarray()
         self.buffer = bitarray()
+        self.hamming_buffer = bitarray()
         self.received = [b""]
         self.got_start = False
 
@@ -92,12 +98,14 @@ class Detector:
             ranges.append(max(lower, 0))
             ranges.append(min(upper, 255))
 
-
+        # TODO Brightness levels are hardcoded here (tmp)
+        # This is to ensure maximum range for intermediate grays.
+        # Comment out for dynamically calculated ranges
         ranges = [
-               0,  30,
-              30, 128,
-             128, 230,
-             230, 255
+              0,  30,
+             30, 128,
+            128, 230,
+            230, 255
         ]
 
         self.brightness_levels = tuple(ranges)
@@ -142,15 +150,55 @@ class Detector:
 
         return blur, average, np.array(level_check)
 
+    def _add_data(self, buff):
+        if buff.length() > 0 and buff.length() % 8 == 0:
+            # Got at least 1 full byte
+            bytestr = buff.tobytes()
 
-        # Test
-        # lower, upper = self.brightness_levels[lvl * 2], \
-        #                self.brightness_levels[lvl * 2 + 1]
-        # mask = cv2.inRange(blur, lower, upper)
-        # res  = cv2.bitwise_and(frame, frame, mask=mask)
+            if len(self.received[-1]) != len(bytestr):
+                self._log(f"Got: {buff[-8:].to01()} => ({len(bytestr)}) {bytestr}")
 
-        # return res
+            self.received[-1] = bytestr
 
+            if bytestr.endswith(self.stop_bytes):
+                # Remove stop bytes
+                bytestr = bytestr[0:-len(self.stop_bytes)]
+                bytestr = str(Bits.bytes_to_str(bytestr))
+                self.received[-1] = bytestr
+
+                self._log(f"Completed: {bytestr}")
+                self._log("Reset...")
+                self.received.append(b"")
+                self.got_start = False
+                return True
+
+        return False
+
+    def _check_received_data(self):
+        if self.hamming:
+            symbol_length = 8 if self.ham_par else 7
+
+            if self.data.length() > 0 and self.data.length() % symbol_length == 0:
+                # Get Hamming bytes from data and decode to nibbles.
+                ham_byte  = self.data[0:symbol_length]
+                self.data = self.data[symbol_length:]
+
+                if not self.ham_par:
+                    # Insert 0 to make 8 bits long
+                    ham_byte.insert(0, 0)
+
+                dec, err, cor = Hamming.decode_byte(Bits.unpack(ham_byte.tobytes()))
+                dec = bitarray(Bits.bin(dec, 4))
+
+                self.hamming_buffer += dec
+                self._log(f"> Decoded nibble: {dec.to01()} ({cor} of {err} errors corrected)")
+
+                # If enough nibbles decoded for full bytes, continue as without Hamming
+                if self._add_data(self.hamming_buffer):
+                    self.hamming_buffer = bitarray()
+        else:
+            if self._add_data(self.data):
+                self.data = bitarray()
 
     def _mode_single(self, frame):
         # Callback gets called 16 times per second (16 fps limit)
@@ -196,25 +244,7 @@ class Detector:
 
                 # On self.window_size received 0/1 bits, append 0/1 bit to data
                 self.data.append(positive >= self.value_size)
-
-                if self.data.length() % 8 == 0:
-                    # Got at least 1 full byte
-                    bytestr = self.data.tobytes()
-                    self.received[-1] = bytestr
-
-                    self._log(f"Got: {self.data[-8:].to01()} => ({len(bytestr)}) {bytestr}")
-
-                    if bytestr.endswith(self.stop_bytes):
-                        # Remove stop bytes
-                        bytestr = bytestr[0:-len(self.stop_bytes)]
-                        bytestr = str(Bits.bytes_to_str(bytestr))
-                        self.received[-1] = bytestr
-
-                        self._log(f"Completed: {bytestr}")
-                        self._log("Reset...")
-                        self.data = bitarray()
-                        self.received.append(b"")
-                        self.got_start = False
+                self._check_received_data()
 
         ret.add_info(f"Data: {int(ratio * 100)}% white, Found start bits? {self.got_start}")
         for d in self.received:
@@ -247,10 +277,6 @@ class Detector:
         clk, data = clk / frame_clock.size, data / frame_data.size
         clk, data = clk >= self.true_ratio, data >= self.true_ratio
 
-        # self.ct.append(clk)
-        # self.dt.append(data)
-        # print(f"c: {self.ct.to01()}\nd: {self.dt.to01()}")
-
         if self.prev_clk != clk:
             self.prev_clk = clk
             self.capturing_window = True
@@ -277,29 +303,8 @@ class Detector:
                     self._log(f"Got start bits, receiving until {self.stop_bytes}...")
                     self.data      = self.data[idx + start_length:]
                     self.got_start = True
-
         elif self.got_start:
-            if self.data.length() > 0 and self.data.length() % 8 == 0:
-                # Got at least 1 full byte
-                bytestr = self.data.tobytes()
-
-                if len(self.received[-1]) != len(bytestr):
-                    self._log(f"Got: {self.data[-8:].to01()} => ({len(bytestr)}) {bytestr}")
-
-                self.received[-1] = bytestr
-
-                if bytestr.endswith(self.stop_bytes):
-                    # Remove stop bytes
-                    bytestr = bytestr[0:-len(self.stop_bytes)]
-                    bytestr = str(Bits.bytes_to_str(bytestr))
-                    self.received[-1] = bytestr
-
-                    self._log(f"Completed: {bytestr}")
-                    self._log("Reset...")
-                    self.data = bitarray()
-                    self.received.append(b"")
-                    self.got_start = False
-
+            self._check_received_data()
 
         ret.add_info(f"clk={clk}, data={data}, Found start bits? {self.got_start}")
         for d in self.received:
@@ -321,6 +326,7 @@ class Detector:
         data = self.brightness_values[max_level]
         ret.add_info(f"Values={data}, Found start bits? {self.got_start}")
 
+        ## Immediate value
         # if self.brighness_w_clk:
         #     clk, data = data[0], data[1:]
 
@@ -330,7 +336,7 @@ class Detector:
         # else:
         #     self.data.extend(data)
 
-
+        ## Or delay by 1 frame
         if self.brighness_w_clk:
             clk, data = data[0], data[1:]
 
@@ -361,26 +367,7 @@ class Detector:
                     self.got_start = True
 
         if self.got_start:
-            if self.data.length() > 0 and self.data.length() % 8 == 0:
-                # Got at least 1 full byte
-                bytestr = self.data.tobytes()
-
-                if len(self.received[-1]) != len(bytestr):
-                    self._log(f"Got: {self.data[-8:].to01()} => ({len(bytestr)}) {bytestr}")
-
-                self.received[-1] = bytestr
-
-                if bytestr.endswith(self.stop_bytes):
-                    # Remove stop bytes
-                    bytestr = bytestr[0:-len(self.stop_bytes)]
-                    bytestr = str(Bits.bytes_to_str(bytestr))
-                    self.received[-1] = bytestr
-
-                    self._log(f"Completed: {bytestr}")
-                    self._log("Reset...")
-                    self.data = bitarray()
-                    self.received.append(b"")
-                    self.got_start = False
+            self._check_received_data()
 
         for d in self.received:
             ret.add_info(str(d))
@@ -388,9 +375,20 @@ class Detector:
 
 if __name__ == "__main__":
     mode, start_bits, brightness_clk, fps_limit = 3, "11110011", False, 30
+    hamming, hamming_parity = False, False
 
-    if len(sys.argv) > 2 and sys.argv[1] in ("-m", "--mode"):
-        mode = int(sys.argv[2])
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] in ("-m", "--mode"):
+            mode = int(sys.argv[i+1])
+            i += 2
+        elif sys.argv[i] in ("-h", "--hamming"):
+            val = sys.argv[i+1].lower()
+            if val in ("true", "false"):
+                hamming = val[0] == 't'
+            else:
+                hamming = bool(sys.argv[i+1])
+            i += 2
 
     if mode == 0:
         # Single screen
@@ -409,6 +407,8 @@ if __name__ == "__main__":
         mode = 2
         brightness_clk = True
 
-    d = Detector(mode=mode, start_bits=start_bits, brighness_w_clk=brightness_clk)
+    d = Detector(mode=mode, start_bits=start_bits,
+                 brighness_w_clk=brightness_clk,
+                 hamming=hamming, hamming_parity=hamming_parity)
     tracker = ScreenTracker(input_callback=d.determine_bits, reset_callback=d.reset, tracker="static", fps_limit=fps_limit)
     tracker.start()
