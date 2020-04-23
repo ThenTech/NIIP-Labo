@@ -20,7 +20,7 @@
             <label id="mode-label" onclick="toggleClock()">BPS:</label>
             <input class="input-box" id="bps" value="4"></input>
         </div>
-        
+
         <div>
             <label for="cars">Mode:</label>
             <select id="mode" onchange="changeMode()">
@@ -31,8 +31,15 @@
             </select>
         </div>
 
-        <input class="check" type="checkbox" id="hamming_check" name="hamming"><label id="check_label" for="hamming_check">Enable hamming</label>
-        <input class="check" type="checkbox" id="parity_check" name="parity"><label id="check_label" for="parity_check">Enable extra parity bit</label><br>
+        <div>
+            <input class="check" type="checkbox" id="hamming_check" name="hamming">
+            <label id="check_label" for="hamming_check">Enable hamming</label>
+        </div>
+        <div>
+            <input class="check" type="checkbox" id="parity_check" name="parity">
+            <label id="check_label" for="parity_check">Enable extra parity bit</label>
+            <br>
+        </div>
     </div>
     <div class="transmit-box" id="clock-box" onclick="transmit()"></div>
     <div class="transmit-box" id="transmit-box" onclick="transmit()"></div>

@@ -9,26 +9,28 @@ let settings_block = document.getElementById("settings-block");
 let mode_select = document.getElementById("mode");
 let settings_shown = false;
 let clock_val = false;
+
 /**
  * Hide or show the clock div
- * @param {*} clock_enabled 
+ * @param {*} clock_enabled
  */
 function toggleClock(clock_enabled) {
     if (clock_enabled) {
         // Show clock div
         clock.style.display = "block";
         // Set height of containers
-        transmitter.style.height = "45vh";
-        clock.style.height = "45vh";
+        transmitter.style.height = "50vh";
+        clock.style.height = "50vh";
     } else {
         // Show clock div
         clock.style.display = "none";
         // Set height of containers
-        transmitter.style.height = "90vh";
+        transmitter.style.height = "100vh";
         // Change mode label
         mode_label.innerText = "BPS";
     }
 }
+
 /**
  * Check if the clock div has to be enabled
  */
@@ -63,22 +65,23 @@ function transmit() {
     const text = input_text.value;
 
     span = 1000 / +input_bps.value;
-
     console.log("Used span: " + span);
+
     var bytes = [start_symbol];
     const strBytes = stringToBytes(text);
+
     for (let i = 0; i < strBytes.length; i++) {
         bytes.push(strBytes[i]);
     }
     bytes.push(stop_symbol);
 
     console.log(bytes);
-
     transmitBytes(bytes);
 }
+
 /**
  * Basic transmission of the bytes
- * @param {} bytes 
+ * @param {} bytes
  */
 function transmitBytes_basic(bytes) {
     const bits = toBitArray(bytes);
@@ -101,9 +104,10 @@ function transmitBytes_basic(bytes) {
         }, span * i)
     }
 }
+
 /**
  * Transmission of the bytes with clock enabled (extra div)
- * @param {} bytes 
+ * @param {} bytes
  */
 function transmitBytes_clock(bytes) {
     const bits = toBitArray(bytes);
@@ -123,21 +127,20 @@ function transmitBytes_clock(bytes) {
             transmitter.style.background = vis;
 
             var clock_color = "white";
-            if(clock_val) {
+            if (clock_val) {
                 clock_color = "black";
             }
             clock.style.backgroundColor = clock_color;
             clock_val = !clock_val;
-
 
             console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
         }, span * i)
     }
 }
 /**
- * Transmission of bytes by transmitting 
+ * Transmission of bytes by transmitting
  * 2 bits at a time
- * @param {*} bytes 
+ * @param {*} bytes
  */
 function transmitBytes_brightness(bytes) {
     const bits = toBitArray(bytes);
@@ -148,7 +151,6 @@ function transmitBytes_brightness(bytes) {
 
     for (let i = 0; i < bits.length; i += 2) {
         const bit = bits[i] + bits[i + 1];
-
 
         setTimeout(function () {
             var digit = parseInt(bit, 2);
@@ -168,9 +170,9 @@ function transmitBytes_brightness(bytes) {
     }
 }
 /**
- * Transmission of the bytes by using the 
+ * Transmission of the bytes by using the
  * brightness as a clock (no extra div)
- * @param {*} bytes 
+ * @param {*} bytes
  */
 function transmitBytes_brightness_clock(bytes) {
     const bits = toBitArray(bytes);
@@ -186,7 +188,6 @@ function transmitBytes_brightness_clock(bytes) {
         clock_val = !clock_val;
         const bit = clock_bit + bits[i];
 
-
         setTimeout(function () {
             var digit = parseInt(bit, 2);
             digit *= 85;
@@ -199,7 +200,6 @@ function transmitBytes_brightness_clock(bytes) {
             var vis = "rgb(" + digit + ", " + digit + ", " + digit + ")";
             transmitter.style.background = vis;
 
-
             console.log(`${prev} (diff=${diff}, delay=${delay}) Color set to ${vis}`)
         }, span * i)
     }
@@ -207,10 +207,11 @@ function transmitBytes_brightness_clock(bytes) {
 
 /**
  * Selects the right procedure to transmit the bytes
- * @param {*} bytes 
+ * @param {*} bytes
  */
 function transmitBytes(bytes) {
     const mode = mode_select.value;
+
     if (mode.localeCompare("basic") == 0) {
         transmitBytes_basic(bytes);
     }
@@ -224,31 +225,38 @@ function transmitBytes(bytes) {
         transmitBytes_brightness_clock(bytes);
     }
 }
+
 /**
  * Convert the bytes to a bit array
  * Apply Hamming if enabled
- * @param {*} bytes 
+ * @param {*} bytes
  */
 function toBitArray(bytes) {
     let result = [];
     const hamming = document.getElementById("hamming_check").checked;
     let str = "";
+
     for(let i = 0; i < bytes.length; i++) {
         str += bytes[i];
     }
+
     if(hamming) {
         const extraParity = document.getElementById("parity_check").checked;
         str = hammingEncodeData(str, extraParity);
     }
+
     for(let i = 0; i < str.length; i++) {
         result.push(str[i])
     }
+
     return result;
 }
+
 function hammingEncodeData(data, addExtra = false) {
     if(data.length % 4 != 0) {
         console.log("Can't encode nibbles")
     }
+
     let result = ""
     for(let i = 0; i < data.length; i+=4) {
         let str = "";
@@ -262,35 +270,41 @@ function hammingEncodeData(data, addExtra = false) {
         console.log("Encoding '" + str + "' gave '" + encoded + "'")
         result += encoded;
     }
+
     return result
 }
+
 function parityBit(bin='', parity = 'e'){
     function bitCount(bin){
         return (bin.match(/1/g) || []).length;
     }
-    
+
     let isEven = bitCount(bin) % 2 === 0;
-    if(parity.match(/^e$|^even$/i)) return isEven ? '0' : '1';
+    if(parity.match(/^e$|^even$/i))
+        return isEven ? '0' : '1';
     return isEven ? '1' : '0';
 }
+
 /**
  * Convert to binary
- * @param {*} val 
- * @param {*} pad_length 
+ * @param {*} val
+ * @param {*} pad_length
  */
 function toBinary(val, pad_length = 8) {
     return (val).toString(2).padStart(pad_length, '0');
 }
+
 /**
  * Convert string to bytes
- * @param {*} str 
+ * @param {*} str
  */
 function stringToBytes(str) {
     return toUTF8Array(str).map(item => toBinary(item))
 }
+
 /**
  * Appy UTF8 encoding to a string
- * @param {*} str 
+ * @param {*} str
  */
 function toUTF8Array(str) {
     let utf8 = [];
@@ -324,6 +338,7 @@ function toUTF8Array(str) {
 
     return utf8;
 }
+
 /**
  * hammingEncode - encode binary string input with hamming algorithm
  * @param {String} input - binary string, '10101'
@@ -392,7 +407,7 @@ function hammingPureDecode(input) {
 	var originCode = input;
 	var hasError = false;
 	var inputFixed, i;
-	
+
 	i = 1;
 	while (l / i >= 1) {
 		controlBitsIndexes.push(i);
@@ -436,7 +451,7 @@ function hammingDecode(input) {
 	});
 
 	if (sum) {
-		output[sum - 1] === '1' 
+		output[sum - 1] === '1'
 			? output = replaceCharacterAt(output, sum - 1, '0')
 			: output = replaceCharacterAt(output, sum - 1, '1');
 	}
@@ -462,7 +477,7 @@ function hammingCheck(input) {
  * replaceCharacterAt - replace character at index
  * @param {String} str - string
  * @param {Number} index - index
- * @param {String} character - character 
+ * @param {String} character - character
  * @returns {String} - string
  */
 function replaceCharacterAt(str, index, character) {
@@ -484,4 +499,3 @@ function chunk(arr, size) {
 	}
 	return chunks;
 }
-
