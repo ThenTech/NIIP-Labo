@@ -257,7 +257,7 @@ class Detector:
         frame = self._filter_bin_threshold(frame)
 
         # Orient to portrait
-        h, w  = frame.shape
+        h, w  = frame.shape[0], frame.shape[1]
 
         if w > h:
             # Turn 90°
@@ -374,7 +374,7 @@ class Detector:
         return ret
 
 if __name__ == "__main__":
-    mode, start_bits, brightness_clk, fps_limit = 3, "11110011", False, 30
+    mode, start_bits, brightness_clk, fps_limit = 1, "11110011", False, 30
     hamming, hamming_parity = False, False
 
     i = 1
