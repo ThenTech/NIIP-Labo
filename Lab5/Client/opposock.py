@@ -1,6 +1,6 @@
-from contextlib import contextmanager
 import socket
 
+from colours import *
 
 class Constants:
     LF   = b"\n"
@@ -8,19 +8,28 @@ class Constants:
 
 
 class OSocket:
-    def __init__(self):
+    def __init__(self, sock=None, cleanup=None, addr="127.0.0.1", port=0):
         super().__init__()
-        self.sock = None
+        self.sock    = sock
+        self.cleanup = cleanup
+
+        self.addr = addr
+        self.port = port
 
     def __del__(self):
         if self.sock:
-            try:
-                self.sock.shutdown(1)
-            except: pass
+            if self.cleanup:
+                self.cleanup()
             self.sock.close()
 
+    def __str__(self):
+        return f"{style(f'{self.addr}:{self.port}', Colours.FG.BRIGHT_BLUE)}"
+
+    def set_addr(self, addr, port):
+        self.addr, self.port, addr, port
+
     def recv(self, buffer=4096):
-        data = []
+        data = b""
 
         try:
             while True:
@@ -28,7 +37,7 @@ class OSocket:
                 if not d:
                     break
 
-                data.append(d)
+                data += d
 
                 if d.endswith(Constants.CRLF * 2):
                     break
@@ -37,22 +46,27 @@ class OSocket:
         finally:
             return data
 
+    def accept(self):
+        if hasattr(self.sock, "accept"):
+            yield self.sock.accept()
+        return None
+
     @classmethod
     def new_upd(cls):
-        instance = cls()
-        instance.sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        return instance
+        return cls(socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM))
 
     @classmethod
     def new_tcp(cls):
-        instance = cls()
-        instance.sock = socket.socket()
-        return instance
+        return cls(socket.socket())
 
     @classmethod
-    def new_server(cls, server_tuple, backlog=1):
-        instance = cls()
-        instance.sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-        instance.sock.bind(server_tuple)
-        instance.sock.listen(backlog)
-        return instance
+    def new_server(cls, server_tuple, backlog=5):
+        def shutdown(self):
+            try:
+                self.sock.shutdown(1)
+            except: pass
+
+        sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+        sock.bind(server_tuple)
+        sock.listen(backlog)
+        return cls(sock, cleanup=shutdown)

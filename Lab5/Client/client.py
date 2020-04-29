@@ -1,9 +1,19 @@
 import sys
 import time
+import select
+import socket
 
 from bits import Bits
 from colours import *
 from opposock import OSocket
+from packet import Discover
+from threading import Threading
+
+try:
+    import traceback
+    HAS_TRACE = True
+except:
+    HAS_TRACE = False
 
 
 class Client:
@@ -19,6 +29,7 @@ class Client:
     ]
 
     RETRANSMISSION_TIMEOUT_S = 30
+    INCOMING_TIMEOUT_S       = 10
 
 
     def __init__(self, address, interactive=True, message=None):
@@ -32,8 +43,24 @@ class Client:
 
         self.message = msg
 
+        self.serversock = None
+        self.server_addr, self.server_port = 0, 0
+        self.poller = select.poll()
+
+        self.clientsock = None
+
     def _log(self, msg):
         print(style(f"[Client@{self.address}]", Colours.FG.YELLOW), msg)
+
+    def _error(self, e=None, prefix=""):
+        if e:
+            self._log(prefix + style(type(e).__name__, Colours.FG.RED) + f": {e}")
+            if HAS_TRACE:
+                self._log(style(traceback.format_exc(), Colours.FG.BRIGHT_MAGENTA))
+        else:
+            self._log(prefix + style("Unknown error", Colours.FG.RED))
+
+    ###########################################################################
 
     def _chech_msg(self, data):
         if not data:
@@ -50,9 +77,51 @@ class Client:
         # TODO
         self._log("Setting up client...")
 
+        self.serversock = OSocket.new_server(("", 5000))
+
+    ###########################################################################
+
+    def _server_handle_incoming(self, sock, sock_addr_tuple):
+        addr, port = sock_addr_tuple
+        sock.settimeout(Client.INCOMING_TIMEOUT_S)
+        sock = OSocket(sock, addr=addr, port=port)
+
+        self._log(f"New connection with {addr}:{port}")
+
+        # TODO
+        try:
+            data = sock.recv()
+            self._log(f"{sock} received: {data}")
+
+            # TODO: Sent ACK
+
+        except socket.timeout:
+            self._log(f"{sock}: {style('Timeout!', Colours.FG.RED)}")
+        except socket.error:
+            self._log(f"{sock}: {style('Disconnected!', Colours.FG.RED)}")
+        except Exception as e:
+            self._error(e, prefix=f"{sock}: ")
+        finally:
+            del sock
+            self._log(f"{style(f'{addr}:{port}', Colours.FG.BRIGHT_BLUE)}")
+
+
+    def _server_thread(self):
+        while True:
+            try:
+                sock_addr_tuple = self.serversock.accept()
+                Threading.new_thread(self._server_handle_incoming, sock_addr_tuple)
+            except Exception as e:
+                self._error(e)
+                break
+
     def start(self):
         # Setup
         self._setup()
+
+        Threading.new_thread(self._server_thread)
+
+
 
         # Send first message from cmd line if set
         if self.message:
