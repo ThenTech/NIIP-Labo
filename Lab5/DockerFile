@@ -1,5 +1,5 @@
 #publicly available docker image "python" on docker hub will be pulled
-FROM python
+FROM python:3
 
 # Set label
 LABEL build_version="NIIP_LAB5_1.0"
@@ -8,9 +8,10 @@ LABEL maintainer="Bram_William"
 # Expose port
 EXPOSE 5000
 
-ENV TEST="test" \ 
-    TEST2="test"
+ENV ADDR=0 \
+    MSG=""
 
-COPY Client/ /source
+COPY /Client/ /source
 
-CMD python3 -u /source/main.py ${TEST} ${TEST2}
+# -a ${ADDR} -m "${MSG}"
+CMD python3 -u /source/client.py

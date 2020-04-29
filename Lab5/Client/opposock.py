@@ -19,7 +19,7 @@ class OSocket:
     def __del__(self):
         if self.sock:
             if self.cleanup:
-                self.cleanup()
+                self.cleanup(self)
             self.sock.close()
 
     def __str__(self):
@@ -27,6 +27,10 @@ class OSocket:
 
     def set_addr(self, addr, port):
         self.addr, self.port, addr, port
+
+    @staticmethod
+    def get_local_address():
+        return socket.gethostbyname(socket.gethostname())
 
     def recv(self, buffer=4096):
         data = b""

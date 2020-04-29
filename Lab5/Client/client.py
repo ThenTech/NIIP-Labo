@@ -1,13 +1,12 @@
 import sys
 import time
-import select
 import socket
 
 from bits import Bits
 from colours import *
 from opposock import OSocket
 from packet import Discover
-from threading import Threading
+from threads import Threading
 
 try:
     import traceback
@@ -36,7 +35,7 @@ class Client:
         super().__init__()
         self.address     = address if isinstance(address, bytes) else Client.ADDRESSES[int(address) % len(Client.ADDRESSES)]
         self.interactive = interactive
-        check, msg = self._chech_msg(message)
+        check, msg = self._check_msg(message)
 
         if not self.interactive and not check:
             raise Exception("[Client] No or invalid message to send?")
@@ -45,9 +44,10 @@ class Client:
 
         self.serversock = None
         self.server_addr, self.server_port = 0, 0
-        self.poller = select.poll()
 
         self.clientsock = None
+
+    ###########################################################################
 
     def _log(self, msg):
         print(style(f"[Client@{self.address}]", Colours.FG.YELLOW), msg)
@@ -62,7 +62,7 @@ class Client:
 
     ###########################################################################
 
-    def _chech_msg(self, data):
+    def _check_msg(self, data):
         if not data:
             return False, b''
 
@@ -76,6 +76,8 @@ class Client:
     def _setup(self):
         # TODO
         self._log("Setting up client...")
+
+        self._log(f"{OSocket.get_local_address()}")
 
         self.serversock = OSocket.new_server(("", 5000))
 
@@ -119,7 +121,13 @@ class Client:
         # Setup
         self._setup()
 
-        Threading.new_thread(self._server_thread)
+        # Threading.new_thread(self._server_thread)
+
+
+
+        # Broadcast / flood network to get IPs
+        # => only filter here on applayer, e.g. only take even numbers/IPs
+        # On network layer, just look for everything
 
 
 
@@ -132,7 +140,7 @@ class Client:
             while True:
                 try:
                     msg = input("Enter a new message: ")
-                    check, msg = self._chech_msg(msg)
+                    check, msg = self._check_msg(msg)
 
                     if check:
                         self.send(Bits.str_to_bytes(msg))

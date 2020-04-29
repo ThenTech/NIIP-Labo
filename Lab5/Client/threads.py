@@ -3,7 +3,7 @@ from threading import Thread, Lock, get_ident
 
 class Threading:
     @staticmethod
-    def new_thread(func, *args):
+    def new_thread(func, args=()):
         """
         Create and start a new thread.
         """
