@@ -45,6 +45,8 @@ class Client:
         self.serversock = None
         self.server_addr, self.server_port = 0, 0
 
+        self.addr_book = {}
+
         self.clientsock = None
 
     ###########################################################################
@@ -116,16 +118,35 @@ class Client:
             except Exception as e:
                 self._error(e)
                 break
+    
+    def _join_network(self):
+        #TODO encapsulate in discover package
+        broadcast_sock = self.serversock.broadcast(b"0" + self.address)
+        Threading.new_thread(self._server_handle_broadcast_incoming, (broadcast_sock,))
+    
+    def _server_handle_broadcast_incoming(self, sock):
+        #sock = self.serversock.get_broadcast_recv_sock()
+        while True:
+            try:
+                (msg, addr) = sock.recvfrom(10104)
+                self.addr_book[msg[1:]] = addr[0]
+                print("Learned new adress\nAddresses: " + str(self.addr_book))
+                if(msg[0] == ord(b"0")):
+                    sock.sendto(b"1" + self.address, (addr[0], 10100))
+            except Exception as e:
+                self._error(e)
+    
 
     def start(self):
         # Setup
         self._setup()
 
         # Threading.new_thread(self._server_thread)
-
+        
 
 
         # Broadcast / flood network to get IPs
+        self._join_network()
         # => only filter here on applayer, e.g. only take even numbers/IPs
         # On network layer, just look for everything
 
@@ -139,13 +160,14 @@ class Client:
         if self.interactive:
             while True:
                 try:
-                    msg = input("Enter a new message: ")
+                    msg = ""
                     check, msg = self._check_msg(msg)
 
                     if check:
                         self.send(Bits.str_to_bytes(msg))
-                except (EOFError, KeyboardInterrupt):
+                except (EOFError, KeyboardInterrupt) as e:
                     print("")
+                    self._error(e)
                     self._log("Requested exit.")
                     return
 
@@ -179,3 +201,4 @@ if __name__ == "__main__":
 
     client = Client(address, interactive, msg)
     client.start()
+    time.sleep(20)

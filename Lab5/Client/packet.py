@@ -3,10 +3,21 @@ class IPacket:
     def __init__(self, source_address, destination_address, source_ip=None, destination_ip=None, source_port=None, destination_port=None):
         super().__init__()
 
+class Message(IPacket):
+    pass
+    """
+    length
+    message id
+    sender addr
+    dest addr 
+    payload
+    hopcount
+    
+    """
 
 class Discover(IPacket):
-    def __init__(self, source_address, destination_address):
-        super().__init__(source_address, destination_address)
+    def __init__(self, source_address):
+        super().__init__(source_address)
 
 class Acknowledge(IPacket):
     ACK_DISCOVER = 1

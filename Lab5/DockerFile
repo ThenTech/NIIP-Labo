@@ -14,4 +14,4 @@ ENV ADDR=0 \
 COPY /Client/ /source
 
 # -a ${ADDR} -m "${MSG}"
-CMD python3 -u /source/client.py
+CMD python3 -u /source/client.py -a ${ADDR}
