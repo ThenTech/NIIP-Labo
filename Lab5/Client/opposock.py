@@ -1,36 +1,60 @@
 import socket
 
+from bits import Bits
 from colours import *
+from packet import IPacket
+
 
 class Constants:
     LF   = b"\n"
     CRLF = b"\r\n"
 
+class OSocketException(Exception):
+    pass
+
 
 class OSocket:
-    def __init__(self, sock=None, cleanup=None, addr="127.0.0.1", port=0):
+    def __init__(self, sock=None, shutdwn=False, addr="127.0.0.1", port=0):
         super().__init__()
         self.sock    = sock
-        self.cleanup = cleanup
+        self.shutdwn = shutdwn
 
         self.addr = addr
         self.port = port
 
     def __del__(self):
         if self.sock:
-            if self.cleanup:
-                self.cleanup(self)
+            if self.shutdwn:
+                self.shutdown()
             self.sock.close()
 
     def __str__(self):
         return f"{style(f'{self.addr}:{self.port}', Colours.FG.BRIGHT_BLUE)}"
 
     def set_addr(self, addr, port):
-        self.addr, self.port, addr, port
+        self.addr, self.port = addr, port
+
+    def shutdown(self):
+        try:
+            self.sock.shutdown(1)
+        except: pass
 
     @staticmethod
     def get_local_address():
         return socket.gethostbyname(socket.gethostname())
+
+    @staticmethod
+    def get_local_address_bytes():
+        ip = OSocket.get_local_address()
+        ip = map(int, ip.split('.'))
+        return Bits.pad_bytes(bytes(ip), 4)
+
+    @staticmethod
+    def ip_from_bytes(raw):
+        if len(raw) != 4:
+            # Error
+            return "0.0.0.0"
+        return ".".join(map(str, raw))
 
     def recv(self, buffer=4096):
         data = b""
@@ -49,27 +73,39 @@ class OSocket:
             raise e
         finally:
             return data
-    def broadcast(self, msg):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-        try:
-            msg = msg.encode()
-        except:
-            pass
+    def broadcast(self, msg, dst_port=10100):
+        data = b""
 
-        host = ''
-        port = 10100
-        sock.bind((host,port))
-        sock.sendto(msg, ('<broadcast>', 10100))
+        if isinstance(msg, IPacket):
+            data = msg.to_bin()
+        elif isinstance(msg, bytes):
+            data = msg
+        else:
+            raise OSocketException("[broadcast] Invalid data?")
 
-        return sock
-    
+        self.sock.sendto(data, ('<broadcast>', dst_port))
 
     def accept(self):
         if hasattr(self.sock, "accept"):
-            yield self.sock.accept()
+            return self.sock.accept()
+        return None
+
+    def recvfrom(self, buffer=4096):
+        if hasattr(self.sock, "recvfrom"):
+            return self.sock.recvfrom(buffer)
+        return None
+
+    def sendto(self, msg, addr_tuple):
+        if hasattr(self.sock, "sendto"):
+            data = b""
+            if isinstance(msg, IPacket):
+                data = msg.to_bin()
+            elif isinstance(msg, bytes):
+                data = msg
+            else:
+                raise OSocketException("[broadcast] Invalid data?")
+            return self.sock.sendto(data, addr_tuple)
         return None
 
     @classmethod
@@ -82,12 +118,15 @@ class OSocket:
 
     @classmethod
     def new_server(cls, server_tuple, backlog=5):
-        def shutdown(self):
-            try:
-                self.sock.shutdown(1)
-            except: pass
-
         sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
         sock.bind(server_tuple)
         sock.listen(backlog)
-        return cls(sock, cleanup=shutdown)
+        return cls(sock, shutdwn=True)
+
+    @classmethod
+    def new_broadcastserver(cls, server_tuple=("", 10100)):
+        sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.bind(server_tuple)
+        return cls(sock, shutdwn=True)

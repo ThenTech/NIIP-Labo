@@ -1,5 +1,5 @@
 @echo off
 
-docker run lab5
+docker run -it lab5
 
-REM docker run -e TEST="value" lab5
+REM docker run -e MSG="Hello World!" -e ADDR="0499123456" -it lab5
