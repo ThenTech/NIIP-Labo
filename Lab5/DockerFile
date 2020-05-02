@@ -9,9 +9,9 @@ LABEL maintainer="Bram_William"
 EXPOSE 5000
 
 ENV ADDR=0 \
-    MSG=""
+    MSG="None"
 
 COPY /Client/ /source
 
 # -a ${ADDR} -m "${MSG}"
-CMD python3 -u /source/client.py -a ${ADDR}
+CMD python3 -u /source/client.py -a ${ADDR} -m "${MSG}"

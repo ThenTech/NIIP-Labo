@@ -50,6 +50,8 @@ class IPacket:
         if raw:
             self._parse(raw)
 
+        self.transmit_time = 0
+
     @staticmethod
     def convert_address(addr):
         if isinstance(addr, str):

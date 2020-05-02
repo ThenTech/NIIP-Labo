@@ -20,21 +20,6 @@ class ClientException(Exception):
     pass
 
 
-class SendPacket:
-    def __init__(self, packet, dst_ip):
-        self.packet = packet
-        self.transmit_time = 0
-        self.dst_ip = dst_ip
-
-    def update_time(self):
-        self.transmit_time = time.time()
-
-    def transmit(self):
-        sock = OSocket.new_upd()
-        sock.sendto(self.packet, (self.dst_ip, Client.PORT_MESSAGES))
-        self.update_time()
-
-
 class Client:
     PORT_BROADCAST_SEND = 10100
     PORT_BROADCAST_RECV = 10104
@@ -280,16 +265,25 @@ class Client:
             except Exception as e:
                 self._error(e)
 
+    def _transmit_packet(self, dest_ip, packet):
+        sock = OSocket.new_upd()
+        sock.sendto(packet, (dest_ip, Client.PORT_MESSAGES))
+        packet.transmit_time = time.time()
+
     def _handle_retransmit(self):
         while True:
             with self.expect_acks_lock:
                 current_time = time.time()
 
-                for pid, sent in self.expect_acks.items():
-                    if current_time - sent.transmit_time > Client.RETRANSMISSION_TIMEOUT_S:
+                for pid, packet in self.expect_acks.items():
+                    if current_time - packet.transmit_time > Client.RETRANSMISSION_TIMEOUT_S:
                         # Too long ago, retransmit packet
-                        self._log(style(f"Retransmitting packet with id {Bits.unpack(sent.packet.pid)}...", Colours.FG.BRIGHT_MAGENTA))
-                        sent.transmit()
+                        self._log(style(f"Retransmitting packet with id {Bits.unpack(packet.pid)}...", Colours.FG.BRIGHT_MAGENTA))
+                        dest_ip = self.address_lookup_ip(packet.dest_addr)
+                        if dest_ip:
+                            self._transmit_packet(dest_ip, packet)
+                        else:
+                            self._log(style(f"Unknown address '{packet.dest_addr}' for retransmit?", Colours.FG.BRIGHT_RED))
 
             time.sleep(2)
 
@@ -317,7 +311,7 @@ class Client:
             adr, msg = self.message.split(':', 1)
             adr = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(adr)))
 
-            check, msg = self._check_msg(message)
+            check, msg = self._check_msg(msg)
             if check:
                 self.send(adr, msg)
             else:
@@ -362,10 +356,8 @@ class Client:
         pid = self.next_id()
         packet = IPacket.create_message(pid, self.get_address(), address, data)
         self._log(f"Sending: {packet}")
-
-        transmitpack = SendPacket(packet, dest_ip)
-        transmitpack.transmit()
-        self.add_expected_ack(pid, transmitpack)
+        self._transmit_packet(dest_ip, packet)
+        self.add_expected_ack(pid, packet)
 
 
 if __name__ == "__main__":
@@ -385,6 +377,9 @@ if __name__ == "__main__":
             # Send an initial message in format: `address:msg`
             msg = sys.argv[i+1]
             i += 2
+
+            if msg == "None":
+                msg = None
 
     client = Client(address, interactive, msg)
     client.start()
