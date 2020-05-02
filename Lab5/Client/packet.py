@@ -182,8 +182,8 @@ class IPacket:
         return IPacket.create(PacketType.MESSAGE, pid, src, dst, payload)
 
     @staticmethod
-    def create_message_ack(pid, src, dst, payload):
-        return IPacket.create(PacketType.MSGACK, pid, src, dst, payload)
+    def create_message_ack(pid, src, dst):
+        return IPacket.create(PacketType.MSGACK, pid, src, dst, b"")
 
     @staticmethod
     def create_address_request(pid, src, dst, payload):

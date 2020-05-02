@@ -19,9 +19,26 @@ except:
 class ClientException(Exception):
     pass
 
+
+class SendPacket:
+    def __init__(self, packet, dst_ip):
+        self.packet = packet
+        self.transmit_time = 0
+        self.dst_ip = dst_ip
+
+    def update_time(self):
+        self.transmit_time = time.time()
+
+    def transmit(self):
+        sock = OSocket.new_upd()
+        sock.sendto(self.packet, (self.dst_ip, Client.PORT_MESSAGES))
+        self.update_time()
+
+
 class Client:
     PORT_BROADCAST_SEND = 10100
     PORT_BROADCAST_RECV = 10104
+    PORT_MESSAGES       = 5000
 
     MAX_LENGTH = 254
 
@@ -34,7 +51,7 @@ class Client:
         "499612345",
     ]
 
-    RETRANSMISSION_TIMEOUT_S = 30
+    RETRANSMISSION_TIMEOUT_S = 10
     INCOMING_TIMEOUT_S       = 10
 
 
@@ -42,12 +59,7 @@ class Client:
         super().__init__()
         self.address     = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(address)))
         self.interactive = interactive
-        check, msg = self._check_msg(message)
-
-        if not self.interactive and not check:
-            raise Exception("[Client] No or invalid message to send?")
-
-        self.message = msg
+        self.message     = msg
 
         self.serversock = None
         self.server_addr, self.server_port = 0, 0
@@ -65,6 +77,11 @@ class Client:
 
         self.id_lock    = Threading.new_lock()
         self.ids_in_use = set()
+
+        self.expect_acks_lock = Threading.new_lock()
+        self.expect_acks = {}   # { pid: packet }
+
+        self.input_newline = Threading.new_lock()
 
     def __del__(self):
         pass
@@ -87,10 +104,17 @@ class Client:
         """Return IP as dotted string."""
         return self.ipaddr[0]
 
+    def _printnl(self):
+        if self.input_newline.locked():
+            print("")
+            self.input_newline.release()
+
     def _log(self, msg):
+        self._printnl()
         print(style(f"[Client@{self.get_address()}]", Colours.FG.YELLOW), msg)
 
     def _error(self, e=None, prefix=""):
+        self._printnl()
         if e:
             self._log(prefix + style(type(e).__name__, Colours.FG.RED) + f": {e}")
             if HAS_TRACE:
@@ -142,6 +166,18 @@ class Client:
         with self.addr_book_lock:
             return self.addr_book.get(addr)
 
+    def add_expected_ack(self, pid, packet):
+        with self.expect_acks_lock:
+            self.expect_acks[pid] = packet
+
+    def check_expected_ack(self, pid):
+        with self.expect_acks_lock:
+            if pid in self.expect_acks:  # and self.expect_acks[pid].dest_addr == source_addr
+                del self.expect_acks[pid]
+                return True
+            else:
+                return False
+
     def _check_msg(self, data):
         if not data:
             return False, b''
@@ -153,46 +189,44 @@ class Client:
 
         return True, data
 
-    def _setup(self):
-        # TODO
-        self._log(f"Setting up client at {self.get_ipaddress()}...")
-
-        self.serversock = OSocket.new_server(("", 5000))
-
     ###########################################################################
 
-    def _server_handle_incoming(self, sock, sock_addr_tuple):
-        addr, port = sock_addr_tuple
-        sock.settimeout(Client.INCOMING_TIMEOUT_S)
-        sock = OSocket(sock, addr=addr, port=port)
-
-        self._log(f"New connection with {addr}:{port}")
-
-        # TODO
-        try:
-            data = sock.recv()
-            self._log(f"{sock} received: {data}")
-
-            # TODO: Sent ACK
-
-        except socket.timeout:
-            self._log(f"{sock}: {style('Timeout!', Colours.FG.RED)}")
-        except socket.error:
-            self._log(f"{sock}: {style('Disconnected!', Colours.FG.RED)}")
-        except Exception as e:
-            self._error(e, prefix=f"{sock}: ")
-        finally:
-            del sock
-            self._log(f"{style(f'{addr}:{port}', Colours.FG.BRIGHT_BLUE)}")
-
+    def _setup_message_server(self):
+        self.serversock = OSocket.new_udpserver(("", Client.PORT_MESSAGES))
+        Threading.new_thread(self._server_thread)
 
     def _server_thread(self):
         while True:
             try:
-                sock_addr_tuple = self.serversock.accept()
-                Threading.new_thread(self._server_handle_incoming, sock_addr_tuple)
+                (raw, addr_tuple) = self.serversock.recvfrom(4096)
+
+                addr, port = addr_tuple
+                self._log(f"Incoming connection with {addr}:{port}")
+
+                response = IPacket.from_bytes(raw)
+
+                if response and response.dest_addr == self.get_address():
+                    self._log(f"Received: {response}")
+
+                    if response.ptype == PacketType.MESSAGE:
+                        self._log(style(f"Incoming message: ", Colours.FG.GREEN) + \
+                                style(f"{Bits.bytes_to_str(response.payload)}", Colours.FG.BRIGHT_GREEN))
+
+                        packet = IPacket.create_message_ack(response.pid,
+                                                            self.get_address(),
+                                                            response.source_addr)
+                        self._log(f"Responding with ACK: {packet}")
+                        self.serversock.sendto(packet, (addr, Client.PORT_MESSAGES))
+                    elif response.ptype == PacketType.MSGACK:
+                        if self.check_expected_ack(response.pid):
+                            self.release_id(response.pid)
+                            self._log(style("Message was acknowledged!", Colours.FG.GREEN))
+            except socket.timeout:
+                self._log(f"{self.serversock}: {style('Timeout!', Colours.FG.RED)}")
+            except socket.error:
+                self._log(f"{self.serversock}: {style('Disconnected!', Colours.FG.RED)}")
             except Exception as e:
-                self._error(e)
+                self._error(e, prefix=f"{self.serversock}: ")
                 break
 
     def _join_network(self):
@@ -201,7 +235,7 @@ class Client:
         sock = OSocket.new_broadcastserver(("", Client.PORT_BROADCAST_SEND))
         pack = IPacket.create_discover(self.next_id(), self.get_address(), self.get_ipaddress_bytes())
 
-        self._log(f"Broadcasting {pack}...")
+        self._log(f"Broadcasting {pack}")
         sock.broadcast(pack, dst_port=Client.PORT_BROADCAST_SEND)
 
         Threading.new_thread(self._server_handle_broadcast_incoming, (sock,))
@@ -246,52 +280,92 @@ class Client:
             except Exception as e:
                 self._error(e)
 
+    def _handle_retransmit(self):
+        while True:
+            with self.expect_acks_lock:
+                current_time = time.time()
+
+                for pid, sent in self.expect_acks.items():
+                    if current_time - sent.transmit_time > Client.RETRANSMISSION_TIMEOUT_S:
+                        # Too long ago, retransmit packet
+                        self._log(style(f"Retransmitting packet with id {Bits.unpack(sent.packet.pid)}...", Colours.FG.BRIGHT_MAGENTA))
+                        sent.transmit()
+
+            time.sleep(2)
+
 
     def start(self):
-        # Setup
-        self._setup()
-
-        # Threading.new_thread(self._server_thread)
-
-
+        self._log(f"Setting up client at {self.get_ipaddress()}...")
 
         # Broadcast / flood network to get IPs
         self._join_network()
         # => only filter here on applayer, e.g. only take even numbers/IPs
         # On network layer, just look for everything
 
+        # Setup message server
+        self._setup_message_server()
 
+        # Wait a bit for broadcasts to complete
+        time.sleep(2)
+
+        # Setup retransmit handler
+        Threading.new_thread(self._handle_retransmit)
 
         # Send first message from cmd line if set
         if self.message:
-            self.send(self.message)
+            self._log("Sending initial message from cmd...")
+            adr, msg = self.message.split(':', 1)
+            adr = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(adr)))
+
+            check, msg = self._check_msg(message)
+            if check:
+                self.send(adr, msg)
+            else:
+                self._log(style(f"Invalid message! ('{msg}' to {adr})", Colours.FG.RED))
 
         # If interactive, loop and ask for new messages
         if self.interactive:
             while True:
                 try:
-                    msg = ""  # input("Enter a new message: ")
+                    self.input_newline.acquire(False)
+                    adr = input(style("Enter an adddress   >", Colours.BG.YELLOW, Colours.FG.BLACK) + " ")
+                    adr = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(adr)))
+
+                    if not self.address_exists(adr):
+                        self.input_newline.release()
+                        self._log(style(f"Unknown address '{adr}'?", Colours.FG.BRIGHT_RED))
+                        continue
+
+                    self.input_newline.acquire(False)
+                    msg = input(style("Enter a new message >", Colours.BG.YELLOW, Colours.FG.BLACK) + " ")
                     check, msg = self._check_msg(msg)
 
                     if check:
-                        self.send(Bits.str_to_bytes(msg))
+                        self.send(adr, msg)
+                    else:
+                        self._log(style("Invalid message!", Colours.FG.RED))
                 except (EOFError, KeyboardInterrupt) as e:
                     print("")
                     self._log(f"Requested exit from interactive mode ({style(type(e).__name__, Colours.FG.RED)}).")
                     sys.exit()
                     return
 
-    def send(self, data):
-        # TODO
-        self._log(f"Sending: {data}")
+    def send(self, address, data):
+        dest_ip = self.address_lookup_ip(address)
 
-        # if not received_confirmation within RETRANSMISSION_TIMEOUT_S:
-        #    self.send(data)
+        if not dest_ip:
+            self._log(style(f"Unknown address '{address}'?", Colours.FG.BRIGHT_RED))
+            return
 
-        # TODO Make 2 threads, for sending and receiving, both with udp socket?
-        # On send, queue message to send thread
-        # On receive display, and send confirm
-        #   Only display msgs targeted to self.address, add additional filter to sometimes drop others
+        self._log(f"Sending to {address}: {data}")
+
+        pid = self.next_id()
+        packet = IPacket.create_message(pid, self.get_address(), address, data)
+        self._log(f"Sending: {packet}")
+
+        transmitpack = SendPacket(packet, dest_ip)
+        transmitpack.transmit()
+        self.add_expected_ack(pid, transmitpack)
 
 
 if __name__ == "__main__":
@@ -300,12 +374,15 @@ if __name__ == "__main__":
     i = 1
     while i < len(sys.argv):
         if sys.argv[i] in ("-a", "--address"):
+            # Self address (as number in string)
             address = Bits.bytes_to_str(sys.argv[i+1])
             i += 2
         elif sys.argv[i] in ("-i", "--interactive"):
+            # Whether to go into interactive mode to send new messages
             interactive = True
             i += 1
         elif sys.argv[i] in ("-m", "--message"):
+            # Send an initial message in format: `address:msg`
             msg = sys.argv[i+1]
             i += 2
 

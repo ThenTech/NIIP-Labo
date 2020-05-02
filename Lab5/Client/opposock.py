@@ -124,6 +124,13 @@ class OSocket:
         return cls(sock, shutdwn=True)
 
     @classmethod
+    def new_udpserver(cls, server_tuple, backlog=5):
+        sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.bind(server_tuple)
+        return cls(sock, shutdwn=True)
+
+    @classmethod
     def new_broadcastserver(cls, server_tuple=("", 10100)):
         sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM, proto=socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
