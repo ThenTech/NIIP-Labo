@@ -322,9 +322,11 @@ class Client:
             while True:
                 try:
                     self.input_newline.acquire(False)
-                    adr = input(style("Enter an adddress   >", Colours.BG.YELLOW, Colours.FG.BLACK) + " ")
-                    adr = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(adr)))
+                    adr = input(style("Enter an address    >", Colours.BG.YELLOW, Colours.FG.BLACK) + " ")
+                    if not adr:
+                        continue
 
+                    adr = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(adr)))
                     if not self.address_exists(adr):
                         self.input_newline.release()
                         self._log(style(f"Unknown address '{adr}'?", Colours.FG.BRIGHT_RED))
@@ -380,6 +382,10 @@ if __name__ == "__main__":
 
             if msg == "None":
                 msg = None
+
+
+    print("Waiting for keypress... (set-up tcp dump now)")
+    input()
 
     client = Client(address, interactive, msg)
     client.start()
