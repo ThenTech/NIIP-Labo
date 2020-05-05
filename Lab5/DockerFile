@@ -9,9 +9,11 @@ LABEL maintainer="Bram_William"
 EXPOSE 5000
 
 ENV ADDR=0 \
-    MSG="None"
+    MSG="None" \
+    WHITELIST="None" \
+    FILTER=1
 
 COPY /Client/ /source
 
 # -a ${ADDR} -m "${MSG}"
-CMD python3 -u /source/client.py -a ${ADDR} -m "${MSG}"
+CMD python3 -u /source/client.py -a ${ADDR} -m "${MSG}" -w ${WHITELIST} -f ${FILTER}
