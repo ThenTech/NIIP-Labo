@@ -14,19 +14,24 @@ class PacketType:
     DISCACK  = 0x2
     MESSAGE  = 0x3
     MSGACK   = 0x4
-    ADDRREQ  = 0x5
-    ADDRACK  = 0x6
 
-    CHECK_VALID = (DISCOVER, DISCACK, MESSAGE, MSGACK, ADDRREQ, ADDRACK)
+    CONTACT_RELAY     = 0x5
+    CONTACT_RELAY_ACK = 0x6
+
+    CHECK_VALID = (
+        DISCOVER, DISCACK,
+        MESSAGE, MSGACK,
+        CONTACT_RELAY, CONTACT_RELAY_ACK
+    )
 
     __STRINGS = {
-        INVALID  : "INVALID",
-        DISCOVER : "DISCOVER",
-        DISCACK  : "DISCOVER_ACK",
-        MESSAGE  : "MESSAGE",
-        MSGACK   : "MESSAGE_ACK",
-        ADDRREQ  : "ADDRES_REQUEST",
-        ADDRACK  : "ADDRES_ACK",
+        INVALID           : "INVALID",
+        DISCOVER          : "DISCOVER",
+        DISCACK           : "DISCOVER_ACK",
+        MESSAGE           : "MESSAGE",
+        MSGACK            : "MESSAGE_ACK",
+        CONTACT_RELAY     : "CONTACT_RELAY",
+        CONTACT_RELAY_ACK : "CONTACT_RELAY_ACK",
     }
 
     @staticmethod
@@ -72,8 +77,7 @@ class IPacket:
 
     def __str__(self):
         attr = []
-        if self.pid:
-            attr.append(f"id={Bits.unpack(self.pid)}")
+
         if self.length:
             attr.append(f"len={self.length}")
 
@@ -84,10 +88,11 @@ class IPacket:
             attr.append("data={0}".format(self.payload if self.length < 50 else \
                                           f"({self.length} bytes)"))
 
-        text = "<{0}{1}>" \
-            .format(self.name(), " " + ", ".join(attr) if attr else "")
+        text = style(f"<{self.name()} ", Colours.FG.BLUE) \
+             + style(f"id={Bits.unpack(self.pid)}", Colours.FG.BRIGHT_BLUE) \
+             + style(", " + ", ".join(attr) if attr else "" + ">", Colours.FG.BLUE)
 
-        return style(text, Colours.FG.BLUE)
+        return text
 
     ###########################################################################
 
@@ -119,12 +124,12 @@ class IPacket:
             return None
 
         packet_adaptor = {
-            PacketType.DISCOVER : IPacket,
-            PacketType.DISCACK  : IPacket,
-            PacketType.MESSAGE  : IPacket,
-            PacketType.MSGACK   : IPacket,
-            PacketType.ADDRREQ  : IPacket,
-            PacketType.ADDRACK  : IPacket,
+            PacketType.DISCOVER          : IPacket,
+            PacketType.DISCACK           : IPacket,
+            PacketType.MESSAGE           : IPacket,
+            PacketType.MSGACK            : IPacket,
+            PacketType.CONTACT_RELAY     : ContactRelay,
+            PacketType.CONTACT_RELAY_ACK : ContactRelayAck,
         }
 
         if packet_type not in packet_adaptor:
@@ -188,30 +193,102 @@ class IPacket:
         return IPacket.create(PacketType.MSGACK, pid, src, dst, b"")
 
     @staticmethod
-    def create_address_request(pid, src, dst, payload):
-        return IPacket.create(PacketType.ADDRREQ, pid, src, dst, payload)
+    def create_contact_relay(pid, src, dst, next_hop, payload):
+        packet = ContactRelay()
+        packet.ptype       = PacketType.CONTACT_RELAY
+        packet.pid         = pid
+        packet.source_addr = src
+        packet.dest_addr   = dst
+
+        packet.prev_hop  = src
+        packet.next_hop  = next_hop
+        packet.hop_count = 0
+
+        packet.length  = len(payload)
+        packet.payload = payload
+
+        return packet
 
     @staticmethod
-    def create_address_ack(pid, src, dst, payload):
-        return IPacket.create(PacketType.ADDRACK, pid, src, dst, payload)
+    def create_contact_relay_ack(pid, src, dst, next_hop):
+        packet = ContactRelayAck()
+        packet.ptype       = PacketType.CONTACT_RELAY_ACK
+        packet.pid         = pid
+        packet.source_addr = src
+        packet.dest_addr   = dst
+
+        packet.prev_hop  = src
+        packet.next_hop  = next_hop
+        packet.hop_count = 0
+
+        packet.length  = 0
+        packet.payload = b""
+
+        return packet
 
 
-# class Discover(IPacket):
-#     def __init__(self, raw=b""):
-#         super().__init__(raw)
+class ContactRelay(IPacket):
+    def __init__(self, raw=b""):
+        super().__init__(raw)
 
-# class DiscoverAcknowledge(IPacket):
-#     def __init__(self, raw=b""):
-#         super().__init__(raw)
+        self.prev_hop  = 0
+        self.next_hop  = 0
+        self.hop_count = 0
 
-# class Message(IPacket):
-#     """
-#     length
-#     message id
-#     sender addr
-#     dest addr
-#     payload
-#     hopcount
-#     """
-#     def __init__(self, raw=b""):
-#         super().__init__(raw)
+        if raw:
+            self._parse_payload()
+
+    def _parse_payload(self):
+        if len(self.payload) < 9:
+            raise PacketException(f"[ContactRelay::parse] Invalid payload length (too small): {len(self.payload)} < 9")
+
+        self.prev_hop  = Bits.unpack(self.payload[0:4])
+        self.next_hop  = Bits.unpack(self.payload[4:8])
+        self.hop_count = self.payload[8]  # Already int (1 element)
+
+        self.payload = self.payload[9:]
+        self.length  = len(self.payload)
+
+    def to_bin(self):
+        if len(self.pid) != 1:
+            raise PacketException(f"[IPacket::to_bin] Malformed packet, pid length mismatch!")
+
+        data = bytearray()
+        data.append(self.ptype)
+        data.append(self.length + 4 + 4 + 1)   # Adjust for IPacket length (add hop info)
+        data.extend(self.pid)
+        data.extend(IPacket.convert_address(self.source_addr))
+        data.extend(IPacket.convert_address(self.dest_addr))
+        data.extend(IPacket.convert_address(self.prev_hop))
+        data.extend(IPacket.convert_address(self.next_hop))
+        data.append(self.hop_count)
+        data.extend(self.payload)
+        return bytes(data)
+
+    def __str__(self):
+        attr = []
+
+        if self.length:
+            attr.append(f"len={self.length}")
+
+        attr.append(f"src={self.source_addr}")
+        attr.append(f"dst={self.dest_addr}")
+
+        attr.append(f"hop={self.prev_hop}->{self.next_hop}")
+        attr.append(f"hops={self.hop_count}")
+
+        if self.payload:
+            attr.append("data={0}".format(self.payload if self.length < 50 else \
+                                          f"({self.length} bytes)"))
+
+        text = style(f"<{self.name()} ", Colours.FG.BLUE) \
+             + style(f"id={Bits.unpack(self.pid)}", Colours.FG.BRIGHT_BLUE) \
+             + style(", " + ", ".join(attr) if attr else "" + ">", Colours.FG.BLUE)
+
+        return text
+
+
+
+class ContactRelayAck(ContactRelay):
+    def __init__(self, raw=b""):
+        super().__init__(raw)
