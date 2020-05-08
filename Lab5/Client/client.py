@@ -276,7 +276,7 @@ class Client:
             meta = MeshMetadata(pid, self.get_address(), dst, data)
             self.mesh_metadata[meta.get_key()] = meta
 
-    def mesh_has_data(self, pid, dst)
+    def mesh_has_data(self, pid, dst):
         key = (pid, self.get_address(), dst)
 
         with self.mesh_metadata_lock:
