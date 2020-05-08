@@ -276,7 +276,7 @@ class Client:
             meta = MeshMetadata(pid, self.get_address(), dst, data)
             self.mesh_metadata[meta.get_key()] = meta
 
-    def mesh_has_data(self, pid, dst)
+    def mesh_has_data(self, pid, dst):
         key = (pid, self.get_address(), dst)
 
         with self.mesh_metadata_lock:
@@ -287,7 +287,7 @@ class Client:
 
         with self.mesh_metadata_lock:
             if key in self.mesh_metadata:
-                meta = self.mesh_metadata
+                meta = self.mesh_metadata[key]
                 del self.mesh_metadata[key]
                 return meta.data
         return None
@@ -384,14 +384,14 @@ class Client:
                     # Route Request message (mesh)
                     elif response.ptype == PacketType.ROUTE_REQUEST:
                         self._log(f"Incoming route request from {response.source_addr}")
-                        
-                        packet = IPacket.create_route_request_ack(response.pid, 
-                                                                  self.get_address(), 
-                                                                  response.source_addr, 
+
+                        packet = IPacket.create_route_request_ack(response.pid,
+                                                                  self.get_address(),
+                                                                  response.source_addr,
                                                                   [self.get_address()] + response.get_reverse_route())
-                        
+
                         next_hop = packet.get_next_hop_from(self.get_address())
-                        
+
                         dest_ip = self.address_lookup_ip(next_hop)
                         if not dest_ip:
                             self._log(style(f"Unknown address '{next_hop}'?", Colours.FG.BRIGHT_RED))
@@ -413,10 +413,10 @@ class Client:
                                 continue
 
                             pid    = self.next_id()
-                            packet = IPacket.create_route_relay(pid, 
-                                                                self.get_address(), 
-                                                                response.source_addr, 
-                                                                [self.get_address()] + response.get_reverse_route(),
+                            packet = IPacket.create_route_relay(pid,
+                                                                self.get_address(),
+                                                                response.source_addr,
+                                                                response.get_reverse_route(),
                                                                 data)
 
                             next_hop = packet.get_next_hop_from(self.get_address())
@@ -434,19 +434,19 @@ class Client:
                     elif response.ptype == PacketType.ROUTE_RELAY:
                         self._log(style(f"Incoming message from {response.source_addr}: ", Colours.FG.GREEN) + \
                                   style(f"{Bits.bytes_to_str(response.payload)}", Colours.FG.BRIGHT_GREEN))
-                        
+
                         packet = IPacket.create_route_relay_ack(response.pid,
                                                                 self.get_address(),
                                                                 response.source_addr,
-                                                                [self.get_address()] + response.get_reverse_route())
-                        
+                                                                response.get_reverse_route())
+
                         next_hop = packet.get_next_hop_from(self.get_address())
 
                         dest_ip = self.address_lookup_ip(next_hop)
                         if not dest_ip:
                             self._log(style(f"Unknown address '{next_hop}'?", Colours.FG.BRIGHT_RED))
                             continue
-                        
+
                         self._log(f"Responding with ACK: {packet}")
                         self.serversock.sendto(packet, (dest_ip, Client.PORT_MESSAGES))
                     elif response.ptype == PacketType.ROUTE_RELAY_ACK:
@@ -491,7 +491,7 @@ class Client:
 
                         with self.addr_book_lock:
                             for key in self.addr_book:
-                                if key not in used_hops: 
+                                if key not in used_hops:
                                     dest_ip = self.addr_book[key]
                                     self._log(f"Relaying route request to {key}...")
                                     self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
@@ -654,10 +654,10 @@ class Client:
                                 self._transmit_packet(dest_ip, packet)
                             else:
                                 self._log(style(f"Unknown address '{next_hop}' for retransmit?", Colours.FG.BRIGHT_RED))
-                        
+
                         elif packet.ptype in (PacketType.ROUTE_REQUEST, PacketType.ROUTE_RELAY):
                             if packet.ptype == PacketType.ROUTE_RELAY:
-                                self.mesh_add_data(packet.pid, packet.dest_address, packet.payload)
+                                self.mesh_add_data(packet.pid, packet.dest_addr, packet.payload)
                                 packet = IPacket.create_route_request(packet.pid, self.get_address(), packet.dest_addr, [self.get_address()])
 
                             # Resend RouteRequest to every contact
@@ -890,24 +890,36 @@ class Client:
         self.add_expected_ack_for(packet)
 
     def _send_mesh(self, address, data):
-        # TODO ...
-        
         self._log(f"Sending to {address} with {CommunicationType.to_string(CommunicationType.MESH)}: {data}")
 
         pid = self.next_id()
-        rreq_packet = IPacket.create_route_request(pid, self.get_address(), address, [self.get_address()])
 
-        self._log(f"Sending: {packet}")
-        self.mesh_add_data(pid, address, data)
-        
-        # Send RouteRequest to every contact
         with self.addr_book_lock:
-            for key in self.addr_book:
-                dest_ip = self.addr_book[key]
-                self._transmit_packet(dest_ip, rreq_packet)
-                self._log(f"Sending route request to {next_hop}...")
-            
-            self.add_expected_ack_for(rreq_packet)
+            if address in self.addr_book:
+                # Send RouteRelay to contact in address book
+                packet = IPacket.create_route_relay(pid,
+                                                    self.get_address(),
+                                                    address,
+                                                    [self.get_address(), address],
+                                                    data)
+                dest_ip = self.addr_book[address]
+                self._log(f"Sending: {packet}")
+                self._transmit_packet(dest_ip, packet)
+            else:
+                # Send RouteRequest to every contact
+                packet = IPacket.create_route_request(pid, self.get_address(), address, [self.get_address()])
+
+                self._log(f"Sending: {packet}")
+                self.mesh_add_data(pid, address, data)
+
+                for key in self.addr_book:
+                    if key == self.get_address():
+                        continue
+                    dest_ip = self.addr_book[key]
+                    self._log(f"Sending route request to {key}...")
+                    self._transmit_packet(dest_ip, packet)
+
+            self.add_expected_ack_for(packet)
 
     def send(self, address, data, comm_type=CommunicationType.DIRECT_ROUTE):
         # DIRECT_ROUTE, OPPORTUNISTIC, MESH
