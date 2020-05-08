@@ -18,10 +18,16 @@ class PacketType:
     CONTACT_RELAY     = 0x5
     CONTACT_RELAY_ACK = 0x6
 
+    ROUTE_REQUEST     = 0x7
+    ROUTE_REQUEST_ACK = 0x8
+    ROUTE_RELAY       = 0x9
+    ROUTE_RELAY_ACK   = 0x10
+
     CHECK_VALID = (
         DISCOVER, DISCACK,
         MESSAGE, MSGACK,
-        CONTACT_RELAY, CONTACT_RELAY_ACK
+        CONTACT_RELAY, CONTACT_RELAY_ACK,
+        ROUTE_REQUEST, ROUTE_REQUEST_ACK, ROUTE_RELAY, ROUTE_RELAY_ACK
     )
 
     __STRINGS = {
@@ -32,6 +38,10 @@ class PacketType:
         MSGACK            : "MESSAGE_ACK",
         CONTACT_RELAY     : "CONTACT_RELAY",
         CONTACT_RELAY_ACK : "CONTACT_RELAY_ACK",
+        ROUTE_REQUEST     : "ROUTE_REQUEST",
+        ROUTE_REQUEST_ACK : "ROUTE_REQUEST_ACK",
+        ROUTE_RELAY       : "ROUTE_RELAY",
+        ROUTE_RELAY_ACK   : "ROUTE_RELAY_ACK",
     }
 
     @staticmethod
@@ -225,6 +235,70 @@ class IPacket:
         packet.payload = b""
 
         return packet
+    
+    @staticmethod 
+    def create_route_request(pid, src, dst, address_list):
+        packet = RouteRequest()
+        packet.ptype       = PacketType.ROUTE_REQUEST
+        packet.pid         = pid
+        packet.source_addr = src
+        packet.dest_addr   = dst
+
+        packet.hop_count    = len(address_list)
+        packet.address_hops = address_list
+
+        packet.length  = 0
+        packet.payload = b""
+
+        return packet
+
+    @staticmethod 
+    def create_route_request_ack(pid, src, dst, address_list):
+        packet = RouteRequest()
+        packet.ptype       = PacketType.ROUTE_REQUEST_ACK
+        packet.pid         = pid
+        packet.source_addr = src
+        packet.dest_addr   = dst
+
+        packet.hop_count    = len(address_list)
+        packet.address_hops = address_list
+
+        packet.length  = 0
+        packet.payload = b""
+
+        return packet
+
+    @staticmethod 
+    def create_route_relay(pid, src, dst, address_list, payload):
+        packet = RouteRelay()
+        packet.ptype       = PacketType.ROUTE_RELAY
+        packet.pid         = pid
+        packet.source_addr = src
+        packet.dest_addr   = dst
+
+        packet.hop_count    = len(address_list)
+        packet.address_hops = address_list
+
+        packet.length  = len(payload)
+        packet.payload = payload
+
+        return packet
+
+    @staticmethod 
+    def create_route_relay_ack(pid, src, dst, address_list):
+        packet = RouteRelayAck()
+        packet.ptype       = PacketType.ROUTE_RELAY_ACK
+        packet.pid         = pid
+        packet.source_addr = src
+        packet.dest_addr   = dst
+
+        packet.hop_count    = len(address_list)
+        packet.address_hops = address_list
+
+        packet.length  = 0
+        packet.payload = b""
+
+        return packet
 
 
 class ContactRelay(IPacket):
@@ -291,4 +365,100 @@ class ContactRelay(IPacket):
 
 class ContactRelayAck(ContactRelay):
     def __init__(self, raw=b""):
+        super().__init__(raw)
+
+
+class RouteRequest(IPacket):
+    def __init__(self, raw=b""): 
+        super().__init__(raw)
+
+        self.hop_count    = 0
+        self.address_hops = []
+
+        if raw:
+            self._parse_payload()
+
+    def _parse_payload(self):
+        self.hop_count = self.payload[0]
+
+        for offset in range(0, self.hop_count * 4, 4):
+            self.address_hops.append(Bits.unpack(self.payload[offset:offset+4]))
+
+        self.payload = self.payload[self.hop_count * 4:]
+        self.length  = len(self.payload)
+
+    def get_hop_count(self):
+        return len(self.address_hops)
+
+    def get_route(self):
+        return self.address_hops
+
+    def get_reverse_route(self):
+        return list(reversed(self.get_route()))
+
+    def add_next_hop(self, addr):
+        self.address_hops.append(addr)
+
+    def to_bin(self):
+        if len(self.pid) != 1:
+            raise PacketException(f"[IPacket::to_bin] Malformed packet, pid length mismatch!")
+
+        self.hop_count = len(self.address_hops)
+
+        data = bytearray()
+        data.append(self.ptype)
+        data.append(self.length + self.hop_count * 4)
+        data.extend(self.pid)
+        data.extend(IPacket.convert_address(self.source_addr))
+        data.extend(IPacket.convert_address(self.dest_addr))
+        data.append(self.hop_count)
+        data.extend(map(IPacket.convert_address, self.address_hops))
+        data.extend(self.payload)
+        return bytes(data)
+
+    def __str__(self):
+        attr = []
+
+        if self.length:
+            attr.append(f"len={self.length}")
+
+        attr.append(f"src={self.source_addr}")
+        attr.append(f"dst={self.dest_addr}")
+
+        if self.address_hops:
+            attr.append(f"route={'->'.join(self.address_hops)}")
+
+        if self.payload:
+            attr.append("data={0}".format(self.payload if self.length < 50 else \
+                                          f"({self.length} bytes)"))
+
+        text = style(f"<{self.name()} ", Colours.FG.BLUE) \
+             + style(f"id={Bits.unpack(self.pid)}", Colours.FG.BRIGHT_BLUE) \
+             + style(", " + ", ".join(attr) if attr else "" + ">", Colours.FG.BLUE)
+
+        return text
+
+
+class RouteRequestAck(RouteRequest):
+    def __init__(self, raw=b""): 
+        super().__init__(raw)
+
+        if raw:
+            self._parse_payload()
+
+    def get_next_hop_from(self, address):
+        try:
+            index = self.address_hops.index(address) + 1
+        except ValueError:
+            return None
+        else:
+            return self.address_hops[index] if index < len(self.address_hops) else None
+
+
+class RouteRelay(RouteRequestAck):
+    def __init__(self, raw=b""): 
+        super().__init__(raw)
+
+class RouteRelayAck(RouteRequestAck):
+    def __init__(self, raw=b""): 
         super().__init__(raw)

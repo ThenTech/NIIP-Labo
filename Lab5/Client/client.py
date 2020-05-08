@@ -10,7 +10,7 @@ from opposock import OSocket
 from packet import IPacket, PacketType, ContactRelay
 from threads import Threading
 
-from client_extra import ClientException, CommunicationType, AddressFilterType, ContactRelayMetadata
+from client_extra import ClientException, CommunicationType, AddressFilterType, ContactRelayMetadata, MeshMetadata
 
 try:
     import traceback
@@ -78,6 +78,10 @@ class Client:
 
         self.oppo_metadata_lock = Threading.new_lock()
         self.oppo_metadata = {}  # { (pid, src): ContactRelayMetadata }
+
+        self.mesh_metadata_lock = Threading.new_lock()
+        self.mesh_metadata = {}  # { (pid, src): MeshMetadata }
+
 
     def __del__(self):
         pass
@@ -267,6 +271,28 @@ class Client:
                 self._log(style(f"Removed {self.oppo_metadata[key]} from history due to ACK received.", Colours.FG.BRIGHT_MAGENTA))
                 del self.oppo_metadata[key]
 
+    def mesh_add_data(self, pid, dst, data):
+        with self.mesh_metadata_lock:
+            meta = MeshMetadata(pid, self.get_address(), dst, data)
+            self.mesh_metadata[meta.get_key()] = meta
+
+    def mesh_has_data(self, pid, dst)
+        key = (pid, self.get_address(), dst)
+
+        with self.mesh_metadata_lock:
+            return key in self.mesh_metadata
+
+    def mesh_get_and_remove_data(self, pid, dst):
+        key = (pid, self.get_address(), dst)
+
+        with self.mesh_metadata_lock:
+            if key in self.mesh_metadata:
+                meta = self.mesh_metadata
+                del self.mesh_metadata[key]
+                return meta.data
+        return None
+
+
     def _check_msg(self, data):
         if not data:
             return False, b''
@@ -354,6 +380,80 @@ class Client:
                         if self.check_expected_ack(response.pid):
                             self.release_id(response.pid)
                             self._log(style("Message was acknowledged!", Colours.FG.GREEN))
+
+                    # Route Request message (mesh)
+                    elif response.ptype == PacketType.ROUTE_REQUEST:
+                        self._log(f"Incoming route request from {response.source_addr}")
+                        
+                        packet = IPacket.create_route_request_ack(response.pid, 
+                                                                  self.get_address(), 
+                                                                  response.source_addr, 
+                                                                  [self.get_address()] + response.get_reverse_route())
+                        
+                        next_hop = packet.get_next_hop_from(self.get_address())
+                        
+                        dest_ip = self.address_lookup_ip(next_hop)
+                        if not dest_ip:
+                            self._log(style(f"Unknown address '{next_hop}'?", Colours.FG.BRIGHT_RED))
+                            continue
+
+                        self._log(f"Responding with ACK: {packet}")
+                        self.serversock.sendto(packet, (dest_ip, Client.PORT_MESSAGES))
+                    elif response.ptype == PacketType.ROUTE_REQUEST_ACK:
+                        # Remove pid from expected
+                        if self.check_expected_ack(response.pid):
+                            self.release_id(response.pid)
+                            self._log(style("Route request was acknowledged!", Colours.FG.GREEN))
+
+                            # Send original message on this route
+                            data = self.mesh_get_and_remove_data(response.pid, response.source_addr)
+
+                            if not data:
+                                self._log(style(f"The received RouteRequest has no related data to send?", Colours.FG.BRIGHT_RED))
+                                continue
+
+                            pid    = self.next_id()
+                            packet = IPacket.create_route_relay(pid, 
+                                                                self.get_address(), 
+                                                                response.source_addr, 
+                                                                [self.get_address()] + response.get_reverse_route(),
+                                                                data)
+
+                            next_hop = packet.get_next_hop_from(self.get_address())
+
+                            dest_ip = self.address_lookup_ip(next_hop)
+                            if not dest_ip:
+                                self._log(style(f"Unknown address '{next_hop}'?", Colours.FG.BRIGHT_RED))
+                                continue
+
+                            self._log(f"Sending: {packet}")
+                            self.serversock.sendto(packet, (dest_ip, Client.PORT_MESSAGES))
+                            self.add_expected_ack_for(packet)
+
+                    # Route Relay message (mesh)
+                    elif response.ptype == PacketType.ROUTE_RELAY:
+                        self._log(style(f"Incoming message from {response.source_addr}: ", Colours.FG.GREEN) + \
+                                  style(f"{Bits.bytes_to_str(response.payload)}", Colours.FG.BRIGHT_GREEN))
+                        
+                        packet = IPacket.create_route_relay_ack(response.pid,
+                                                                self.get_address(),
+                                                                response.source_addr,
+                                                                [self.get_address()] + response.get_reverse_route())
+                        
+                        next_hop = packet.get_next_hop_from(self.get_address())
+
+                        dest_ip = self.address_lookup_ip(next_hop)
+                        if not dest_ip:
+                            self._log(style(f"Unknown address '{next_hop}'?", Colours.FG.BRIGHT_RED))
+                            continue
+                        
+                        self._log(f"Responding with ACK: {packet}")
+                        self.serversock.sendto(packet, (dest_ip, Client.PORT_MESSAGES))
+                    elif response.ptype == PacketType.ROUTE_RELAY_ACK:
+                        # Remove pid from expected
+                        if self.check_expected_ack(response.pid):
+                            self.release_id(response.pid)
+                            self._log(style("Route relay message was acknowledged!", Colours.FG.GREEN))
                 else:
                     self._log(f"Received: {response}")
 
@@ -383,6 +483,31 @@ class Client:
 
                         self._log(f"Relaying packet to {next_hop}...")
                         self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
+
+                    # Mesh Route Request
+                    elif response.ptype == PacketType.ROUTE_REQUEST:
+                        response.add_next_hop(self.get_address())
+                        used_hops = response.get_route()
+
+                        with self.addr_book_lock:
+                            for key in self.addr_book:
+                                if key not in used_hops: 
+                                    dest_ip = self.addr_book[key]
+                                    self._log(f"Relaying route request to {key}...")
+                                    self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
+
+                    # Mesh Route Relay
+                    elif response.ptype in (PacketType.ROUTE_REQUEST_ACK, PacketType.ROUTE_RELAY, PacketType.ROUTE_RELAY_ACK):
+                        next_hop = response.get_next_hop_from(self.get_address())
+
+                        with self.addr_book_lock:
+                            if next_hop not in self.addr_book:
+                                self._log(style(f"Unknown address for route hop '{next_hop}'?", Colours.FG.BRIGHT_RED))
+                                continue
+                            dest_ip = self.addr_book[next_hop]
+                            self._log(f"Relaying route response to {next_hop}...")
+                            self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
+
                     else:
                         # TODO Unhandled relay type?
                         self._log(style(f"Unhandled Relay type {PacketType.to_string(response.ptype)}!", Colours.FG.BRIGHT_RED))
@@ -529,6 +654,18 @@ class Client:
                                 self._transmit_packet(dest_ip, packet)
                             else:
                                 self._log(style(f"Unknown address '{next_hop}' for retransmit?", Colours.FG.BRIGHT_RED))
+                        
+                        elif packet.ptype in (PacketType.ROUTE_REQUEST, PacketType.ROUTE_RELAY):
+                            if packet.ptype == PacketType.ROUTE_RELAY:
+                                self.mesh_add_data(packet.pid, packet.dest_address, packet.payload)
+                                packet = IPacket.create_route_request(packet.pid, self.get_address(), packet.dest_addr, [self.get_address()])
+
+                            # Resend RouteRequest to every contact
+                            with self.addr_book_lock:
+                                for key in self.addr_book:
+                                    dest_ip = self.addr_book[key]
+                                    self._transmit_packet(dest_ip, packet)
+
                         else:
                             self._log(style(f"Unknown packet type '{PacketType.to_string(packet.ptype)}' for retransmit?", Colours.FG.BRIGHT_RED))
 
@@ -754,11 +891,23 @@ class Client:
 
     def _send_mesh(self, address, data):
         # TODO ...
-
+        
         self._log(f"Sending to {address} with {CommunicationType.to_string(CommunicationType.MESH)}: {data}")
 
-        # ...
-        self._log(style("Not implemented!", Colours.FG.RED))
+        pid = self.next_id()
+        rreq_packet = IPacket.create_route_request(pid, self.get_address(), address, [self.get_address()])
+
+        self._log(f"Sending: {packet}")
+        self.mesh_add_data(pid, address, data)
+        
+        # Send RouteRequest to every contact
+        with self.addr_book_lock:
+            for key in self.addr_book:
+                dest_ip = self.addr_book[key]
+                self._transmit_packet(dest_ip, rreq_packet)
+                self._log(f"Sending route request to {next_hop}...")
+            
+            self.add_expected_ack_for(rreq_packet)
 
     def send(self, address, data, comm_type=CommunicationType.DIRECT_ROUTE):
         # DIRECT_ROUTE, OPPORTUNISTIC, MESH

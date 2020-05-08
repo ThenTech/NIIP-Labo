@@ -83,3 +83,14 @@ class ContactRelayMetadata:
 
     def clear_sent_to(self):
         self.sent_to = set()
+
+
+class MeshMetadata:
+    def __init__(self, request_pid, src, dst, data):
+        self.pid  = request_pid
+        self.src  = src
+        self.dst  = dst
+        self.data = data
+
+    def get_key(self):
+        return (self.pid, self.src, self.dst)
