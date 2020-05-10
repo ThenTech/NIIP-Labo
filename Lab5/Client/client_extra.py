@@ -59,6 +59,7 @@ class ContactRelayMetadata:
         self.pid      = pid
         self.src      = src
         self.dst      = dst
+        self.init_hop = -1
         self.prev_hop = src
         self.next_hop = -1
         self.is_ack   = False
@@ -72,6 +73,7 @@ class ContactRelayMetadata:
             raise ClientException("[ContactRelayMetadata] Wrong packet!")
 
         inst = cls(packet.pid, packet.source_addr, packet.dest_addr)
+        inst.init_hop = packet.prev_hop
         inst.prev_hop = packet.prev_hop
         inst.next_hop = packet.next_hop
         inst.is_ack   = packet.length == 0
@@ -80,7 +82,7 @@ class ContactRelayMetadata:
     def __str__(self):
         return f"<Msg{'Ack' if self.is_ack else 'Relay'} " \
              + f"id={Bits.unpack(self.pid)}, " \
-             + f"route={self.src}->{self.dst}, hop={self.prev_hop}->{self.next_hop}, " \
+             + f"route={self.src}->{self.dst}, init_hop={self.init_hop}, hop={self.prev_hop}->{self.next_hop}, " \
              + f"sent={self.sent_to}>"
 
     def get_key(self):

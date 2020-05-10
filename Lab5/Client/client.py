@@ -218,8 +218,15 @@ class Client:
                 if knows_source:
                     filtered_contacts -= set((packet.source_addr,))
 
+                if old_meta.init_hop > 0:
+                     filtered_contacts -= set((old_meta.init_hop,))
+
                 if filtered_contacts:
                     next_hop = tuple(sorted(filtered_contacts))[0]
+                    old_meta.add_sent_to(next_hop)
+                elif old_meta.init_hop > 0:
+                    # If no contact left in list, sent back to initial
+                    next_hop = old_meta.init_hop
                     old_meta.add_sent_to(next_hop)
                 elif knows_source:
                     # filtered is empty, but knows source, sent back a final time
@@ -481,7 +488,7 @@ class Client:
                             self._log(style(f"Unknown address '{next_hop}'?", Colours.FG.BRIGHT_RED))
                             continue
 
-                        self._log(f"Relaying packet to {next_hop}...")
+                        self._log(style(f"Relaying packet to {next_hop}...", Colours.FG.BRIGHT_MAGENTA))
                         self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
 
                     # Mesh Route Request
@@ -493,7 +500,7 @@ class Client:
                             for key in self.addr_book:
                                 if key not in used_hops:
                                     dest_ip = self.addr_book[key]
-                                    self._log(f"Relaying route request to {key}...")
+                                    self._log(style(f"Relaying route request to {key}...", Colours.FG.BRIGHT_MAGENTA))
                                     self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
 
                     # Mesh Route Relay
@@ -837,6 +844,7 @@ class Client:
             return
 
         self._log(f"Sending: {packet}")
+        self._log(style(f"Relaying packet to {next_hop}...", Colours.FG.BRIGHT_MAGENTA))
         self._transmit_packet(dest_ip, packet)
         self.add_expected_ack_for(packet)
 
