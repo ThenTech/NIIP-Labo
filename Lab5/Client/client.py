@@ -505,7 +505,7 @@ class Client:
                                 self._log(style(f"Unknown address for route hop '{next_hop}'?", Colours.FG.BRIGHT_RED))
                                 continue
                             dest_ip = self.addr_book[next_hop]
-                            self._log(f"Relaying route response to {next_hop}...")
+                            self._log(style(f"Relaying packet to {next_hop}...", Colours.FG.BRIGHT_MAGENTA))
                             self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
 
                     else:
