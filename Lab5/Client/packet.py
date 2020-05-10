@@ -407,6 +407,12 @@ class RouteRequest(IPacket):
     def get_reverse_route(self):
         return list(reversed(self.get_route()))
 
+    def get_route_string(self):
+        return '->'.join(map(str, self.get_route()))
+
+    def get_reverse_route_string(self):
+        return '->'.join(map(str, self.get_reverse_route()))
+
     def add_next_hop(self, addr):
         self.address_hops.append(addr)
 
@@ -441,7 +447,7 @@ class RouteRequest(IPacket):
         attr.append(f"dst={self.dest_addr}")
 
         if self.address_hops:
-            attr.append(f"route={'->'.join(map(str, self.address_hops))}")
+            attr.append(f"route={self.get_route_string()}")
 
         if self.payload:
             attr.append("data={0}".format(self.payload if self.length < 50 else \

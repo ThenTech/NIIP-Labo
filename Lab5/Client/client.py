@@ -21,7 +21,6 @@ except:
 
 class Client:
     PORT_BROADCAST_SEND = 10100
-    PORT_BROADCAST_RECV = 10104
     PORT_MESSAGES       = 5000
 
     MAX_LENGTH = 254
@@ -36,7 +35,6 @@ class Client:
     ]
 
     RETRANSMISSION_TIMEOUT_S = 10
-    INCOMING_TIMEOUT_S       = 10
     OPPO_HISTORY_TTL         = 60
     CONTACTS_TTL             = 60
 
@@ -131,6 +129,7 @@ class Client:
                 self.ids_in_use.add(1)
                 return Bits.pack(1, 1)
             else:
+                # Go to next id first, and only reuse lower ones if wrapped back around.
                 next_id = self.last_used_id + 1
                 if next_id == 0xFF:
                     next_id = 1
@@ -403,7 +402,8 @@ class Client:
                         # Remove pid from expected
                         if self.check_expected_ack(response.pid):
                             self.release_id(response.pid)
-                            self._log(style("Route request was acknowledged!", Colours.FG.GREEN))
+                            self._log(style(f"Route request was acknowledged to reach {response.source_addr}: ", Colours.FG.GREEN) + \
+                                      style(f"{response.get_reverse_route_string()}", Colours.FG.BRIGHT_GREEN))
 
                             # Send original message on this route
                             data = self.mesh_get_and_remove_data(response.pid, response.source_addr)
@@ -509,7 +509,7 @@ class Client:
                             self.serversock.sendto(response, (dest_ip, Client.PORT_MESSAGES))
 
                     else:
-                        # TODO Unhandled relay type?
+                        # Unhandled relay type?
                         self._log(style(f"Unhandled Relay type {PacketType.to_string(response.ptype)}!", Colours.FG.BRIGHT_RED))
             except socket.timeout:
                 self._log(f"{self.serversock}: {style('Timeout!', Colours.FG.RED)}")
@@ -552,9 +552,6 @@ class Client:
         self._log(style("Contact update complete!", Colours.FG.BRIGHT_MAGENTA))
 
     def _server_handle_broadcast_incoming(self):
-        is_even = lambda a: a % 2 == 0
-        addr_evenness = is_even(self.get_address())
-
         while True:
             try:
                 (raw, addr_tuple) = self.broadcast_sock.recvfrom(4096)
@@ -567,43 +564,42 @@ class Client:
                 self._log(f"Incoming broadcast from {ip}:{port}...")
 
                 response = IPacket.from_bytes(raw)
-                if response:
-                    self._log(f"Received: {response}")
+                if not response:
+                    continue
 
-                    # Only parse contacts specified from cmdline param list
-                    if self.address_whitelist and response.source_addr not in self.address_whitelist:
-                        self._log(style(f"Ignoring packet from {response.source_addr}, due to whitelist.", Colours.FG.BRIGHT_RED))
-                        continue
+                self._log(f"Received: {response}")
 
-                    # Apply address/contact filtering on Discovery Ack
-                    if self.filter_addresses == AddressFilterType.ALLOW_ALL:
-                        pass
-                    elif self.filter_addresses == AddressFilterType.ONLY_OPPOSITE_EVENNESS:
-                        if is_even(response.source_addr) == addr_evenness:
-                            # Discard ACKs from same sort
-                            self._log(style(f"Ignoring knowledge of {response.source_addr}, due to address filter.", Colours.FG.BRIGHT_RED))
-                            continue
+                # Only parse contacts specified from cmdline param list
+                if self.address_whitelist and response.source_addr not in self.address_whitelist:
+                    self._log(style(f"Ignoring packet from {response.source_addr}, due to whitelist.", Colours.FG.BRIGHT_RED))
+                    continue
 
-                    ######################################################
+                # Apply address/contact filtering on Discovery Ack
+                if not AddressFilterType.check_allow_address_communication(self.filter_addresses, self.get_address(), response.source_addr):
+                    # Discard packet
+                    self._log(style(f"Ignoring knowledge of {response.source_addr}, due to address filter.", Colours.FG.BRIGHT_RED))
+                    continue
 
-                    if response.ptype == PacketType.DISCACK:
-                        # Quick test for consistency: ip in payload should be the same as socket ip
-                        if OSocket.ip_from_bytes(response.payload) != ip:
-                            self._log(style("Wrong IP address in DISCACK payload?", Colours.FG.BRIGHT_RED))
+                ######################################################
 
-                    elif response.ptype == PacketType.DISCOVER:
-                        # Send DISCACK
-                        pid = self.next_id()
-                        packet = IPacket.create_discover_ack(pid,
-                                                             self.get_address(),
-                                                             response.source_addr,
-                                                             self.get_ipaddress_bytes())
-                        self._log(f"Responding with ACK: {packet}")
-                        self.broadcast_sock.sendto(packet, (ip, Client.PORT_BROADCAST_SEND))
-                        self.release_id(pid)
+                if response.ptype == PacketType.DISCACK:
+                    # Quick test for consistency: ip in payload should be the same as socket ip
+                    if OSocket.ip_from_bytes(response.payload) != ip:
+                        self._log(style(f"Wrong IP address in {PacketType.to_string(response.ptype)} payload?", Colours.FG.BRIGHT_RED))
 
-                    # Always add address for new broadcasts
-                    self.add_new_address(response)
+                elif response.ptype == PacketType.DISCOVER:
+                    # Send DISCACK
+                    pid = self.next_id()
+                    packet = IPacket.create_discover_ack(pid,
+                                                            self.get_address(),
+                                                            response.source_addr,
+                                                            self.get_ipaddress_bytes())
+                    self._log(f"Responding with ACK: {packet}")
+                    self.broadcast_sock.sendto(packet, (ip, Client.PORT_BROADCAST_SEND))
+                    self.release_id(pid)
+
+                # Always add address for new broadcasts
+                self.add_new_address(response)
             except (EOFError, KeyboardInterrupt) as e:
                 self._log(f"Requested exit from broadcast handler ({style(type(e).__name__, Colours.FG.RED)}).")
                 return
@@ -611,6 +607,7 @@ class Client:
                 self._error(e, prefix="BroadcastHandler")
 
     def _transmit_packet(self, dest_ip, packet):
+        # Create new UDP socket and send the packet to the destination.
         sock = OSocket.new_upd()
         sock.sendto(packet, (dest_ip, Client.PORT_MESSAGES))
         packet.transmit_time = time.time()
@@ -629,12 +626,15 @@ class Client:
                         # Too long ago, retransmit packet
                         self._log(style(f"Retransmitting packet with id {Bits.unpack(packet.pid)}...", Colours.FG.BRIGHT_MAGENTA))
 
+                        # Direct Delivery
                         if packet.ptype == PacketType.MESSAGE:
                             dest_ip = self.address_lookup_ip(packet.dest_addr)
                             if dest_ip:
                                 self._transmit_packet(dest_ip, packet)
                             else:
                                 self._log(style(f"Unknown address '{packet.dest_addr}' for retransmit?", Colours.FG.BRIGHT_RED))
+
+                        # Opportunistic Contact Relay
                         elif packet.ptype == PacketType.CONTACT_RELAY:
                             next_hop = self.oppo_get_next_hop_for(packet)
                             if next_hop < 0:
@@ -655,8 +655,10 @@ class Client:
                             else:
                                 self._log(style(f"Unknown address '{next_hop}' for retransmit?", Colours.FG.BRIGHT_RED))
 
+                        # Mesh Route Request or Relay
                         elif packet.ptype in (PacketType.ROUTE_REQUEST, PacketType.ROUTE_RELAY):
                             if packet.ptype == PacketType.ROUTE_RELAY:
+                                # If RouteRelay failed, resend a RouteRequest to discover a new route if possible.
                                 self.mesh_add_data(packet.pid, packet.dest_addr, packet.payload)
                                 packet = IPacket.create_route_request(packet.pid, self.get_address(), packet.dest_addr, [self.get_address()])
 
@@ -700,8 +702,6 @@ class Client:
 
         # Broadcast / flood network to get IPs
         self._join_network()
-        # => only filter here on applayer, e.g. only take even numbers/IPs
-        # On network layer, just look for everything
 
         # Setup message server
         self._setup_message_server()
@@ -717,10 +717,11 @@ class Client:
             self._log("Sending initial message from cmd...")
             adr, msg = self.message.split(':', 1)
 
-            if '@' in adr:
+            try:
                 adr, comm_type = adr.rsplit('@', 1)
-            else:
-                comm_type = 1
+                comm_type = int(comm_type)
+            except:
+                comm_type = CommunicationType.DIRECT_ROUTE
 
             adr = Bits.unpack(IPacket.convert_address(Bits.bytes_to_str(adr)))
 
@@ -746,17 +747,23 @@ class Client:
 
                     # DEBUG COMMANDS
                     if adr in ("contacts", "book"):
+                        # Print address book
                         if self.input_newline.locked():
                             self.input_newline.release()
                         self._log(style("Address book: ", Colours.FG.GREEN) + \
                                   style(", ".join(map(str, sorted(self.addr_book.keys()))), Colours.FG.BRIGHT_GREEN))
                         continue
                     elif adr == "oppometa":
+                        # Print Opportunistic ContactRelay metadata
                         with self.oppo_metadata_lock:
                             for val in self.oppo_metadata.values():
                                 print(val)
                         continue
                     elif adr == "meshmeta":
+                        # Print Mesh RouteRelay metadata
+                        with self.mesh_metadata_lock:
+                            for val in self.mesh_metadata.values():
+                                print(val)
                         continue
 
                     try:
@@ -810,69 +817,13 @@ class Client:
         self.add_expected_ack_for(packet)
 
     def _send_opportunistic(self, address, data):
-        # TODO ...
-
         self._log(f"Sending to {address} with {CommunicationType.to_string(CommunicationType.OPPORTUNISTIC)}: {data}")
 
-        """
-        Zend naar eerst volgende contact die het nog niet heeft gehad.
-            -> Houdt bij van waar het oorspronkelijk kwam (src), dest, id
-        Als Pakket komt binnen van prev-hop == initial_hop op deze client (initial == src)
-            Dit is waar pakket van kwam de eerst keer (of pakket nog niet in history).
-            => Nieuwe transmit, zend verder naar eerste contact != prev-hop
-            => <Send to> history clearen (ook on ACK received!)
-        Als pakket opnieuw binnenkomt, maar prev-hop != initial_hop
-            => Backtracked transmit, dus zend nu naar volgende contact
-        Als pakket opnieuw binnenkomt, maar prev-hop != initial_hop AND sent_to_history bevat alle contacten
-            => Zend terug naar initial_hop
-               (zodat die het naar zijn volgende contact kan zenden)
-        Telkens bijhouden in history:
-            - (pakket_src, packet_id, packet_initial_hop)
-                : [list van contacten naar waar we al verzonden hebben]
-
-        e.g.
-
-        1 -> 2 - > 5 -> 7 -\
-             3 -/           > 8
-             4 -> 6 -------/
-
-        vb geen onderbreking
-        1 -> 2: <r:1->8, h:1->2, sent=[2]>
-        2 -> 5: <r:1->8, h:2->5, sent=[5]>
-        5 -> 7: <r:1->8, h:5->7, sent=[7]>
-        7 -> 8: <r:1->8, h:7->8, sent=[8]>
-        8: ok
-
-        vb client 7 weg
-        1 -> 2: <r:1->8, h:1->2, sent=[2]>
-        2 -> 5: <r:1->8, h:2->5, sent=[5]>
-        5 -> 3: <r:1->8, h:5->3, sent=[3]>
-        3 -> 1: <r:1->8, h:3->1, sent=[1]>
-        1: already sent, but recv from 3, sent+=3 and send to next:
-        1 -> 4: <r:1->8, h:1->4, sent=[2,3,4]>
-        4 -> 6: <r:1->8, h:4->6, sent=[6]>
-        6 -> 8: <r:1->8, h:6->8, sent=[8]>
-        8: ok
-
-        vb client 5 weg
-        1 -> 2: <r:1->8, h:1->2, sent=[2]>
-        2 -> 1: <r:1->8, h:2->1, sent=[1]>
-        1: already sent, got back from 2, send to next:
-        1 -> 3: <r:1->8, h:1->3, sent=[2,3]>
-        3 -> 1: <r:1->8, h:3->1, sent=[1]>
-        1: already sent, got back from 3, send to next:
-        1 -> 4: <r:1->8, h:1->4, sent=[2,3,4]>
-        4 -> 6: <r:1->8, h:4->6, sent=[6]>
-        6 -> 8: <r:1->8, h:6->8, sent=[8]>
-        8: ok
-
-        """
-        pid = self.next_id()
-
-        # TODO
+        pid      = self.next_id()
         next_hop = -1
         packet   = IPacket.create_contact_relay(pid, self.get_address(), address, next_hop, data)
 
+        # Get first hop address
         next_hop = self.oppo_get_next_hop_for(packet)
         if next_hop < 0:
             self._log(style(f"No valid addresses in address book for next hop!", Colours.FG.BRIGHT_RED))
@@ -977,7 +928,7 @@ if __name__ == "__main__":
 
             filter_type = None if filter_type == "None" else int(filter_type)
 
-    print("Waiting for keypress... (set-up tcp dump now)")
+    print("Waiting for keypress... (set-up tcp dump now if wanted)")
     input()
 
     client = Client(address, interactive, msg,

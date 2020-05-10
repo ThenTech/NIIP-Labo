@@ -40,6 +40,19 @@ class AddressFilterType:
     def to_string(atype):
         return AddressFilterType.__STRINGS.get(atype, f"Unknown? ({atype})")
 
+    @staticmethod
+    def _is_even(address):
+        return address % 2 == 0
+
+    @staticmethod
+    def check_allow_address_communication(atype, address_1, address_2):
+        if atype == AddressFilterType.ALLOW_ALL:
+            return True
+        if atype == AddressFilterType.ONLY_OPPOSITE_EVENNESS:
+            return AddressFilterType._is_even(address_1) \
+                != AddressFilterType._is_even(address_2)
+        return False
+
 
 class ContactRelayMetadata:
     def __init__(self, pid, src, dst):
@@ -91,6 +104,12 @@ class MeshMetadata:
         self.src  = src
         self.dst  = dst
         self.data = data
+
+    def __str__(self):
+        return f"<RouteRelay " \
+             + f"id={Bits.unpack(self.pid)}, " \
+             + f"route={self.src}->?->{self.dst}, " \
+             + f"payload={self.data}>"
 
     def get_key(self):
         return (self.pid, self.src, self.dst)
