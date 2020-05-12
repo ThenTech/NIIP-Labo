@@ -2,11 +2,15 @@ from access_points import get_scanner
 from colours import *
 import traceback
 
+from positioning import Position, Point
+
 class Scanner:
     def __init__(self):
         super().__init__()
         self.scanner = get_scanner()
         self.access_points = {}
+
+    ###########################################################################
 
     def __str__(self):
         if self.access_points:
@@ -30,6 +34,8 @@ class Scanner:
         else:
             self._log(prefix + style("Unknown error", Colours.FG.RED))
 
+    ###########################################################################
+
     def sample(self):
         # Calls on windows: `netsh wlan show networks mode=bssid`
         aps = self.scanner.get_access_points()
@@ -44,22 +50,6 @@ class Scanner:
     @staticmethod
     def aps_to_dict(aps):
         return { (ap['ssid'], ap['bssid']) : ap['quality'] for ap in aps}
-
-
-    @staticmethod
-    def _calc_intersetion(x1, y1, r1, x2, y2, r2, x3, y3, r3):
-        """https://www.101computing.net/cell-phone-trilateration-algorithm/"""
-
-        A = 2 * x2 - 2 * x1
-        B = 2 * y2 - 2 * y1
-        C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
-        D = 2 * x3 - 2 * x2
-        E = 2 * y3 - 2 * y2
-        F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
-        x = (C*E - F*B) / (E*A - B*D)
-        y = (C*D - A*F) / (B*D - A*E)
-
-        return x, y
 
     ###########################################################################
 
