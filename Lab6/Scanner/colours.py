@@ -1,3 +1,7 @@
+try:
+    import colorama
+    colorama.init()
+except: pass
 
 FORMAT_ESCAPE_SEQ_SUPPORTED = True
 
