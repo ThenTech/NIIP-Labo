@@ -1,8 +1,34 @@
 from access_points import get_scanner
-from colours import *
+from colours import Colours, style
 import traceback
+import math
 
 from positioning import Position, Point
+
+
+class Locations:
+    _LUT = {
+        "4c:ed:fb:a6:00:bc" : Point(3, 4),  # Vibenet_5G (boven)
+        "4c:ed:fb:a6:00:b8" : Point(3, 4),  # Vibenet (boven)
+        "60:45:cb:59:f0:51" : Point(0, 0),  # Vibenet (onder)     ~ 9m
+        "60:45:cb:59:f0:54" : Point(0, 0),  # Vibenet_5G (onder)
+
+        "50:C7:BF:FE:39:A7" : Point(0, 0),  # Eskettiiit
+        "00:14:5C:8C:EE:98" : Point(0, 0),  # ItHurtsWhenIP
+        "C0:25:E9:E0:EE:6E" : Point(0, 0),  # G-Spot
+        "76:A8:FB:BF:90:BD" : Point(0, 0),  # BramSpot
+    }
+
+    _NOT_GROUND_LEVEL = (
+        "4c:ed:fb:a6:00:bc", "4c:ed:fb:a6:00:b8",
+        "50:C7:BF:FE:39:A7", "C0:25:E9:E0:EE:6E"
+    )
+
+    @staticmethod
+    def get_point(mac, ground_only=False):
+        return Locations._LUT.get(mac, None) \
+            if not ground_only or (ground_only and mac not in Locations._NOT_GROUND_LEVEL) else None
+
 
 class Scanner:
     def __init__(self):
@@ -41,7 +67,7 @@ class Scanner:
         aps = self.scanner.get_access_points()
 
         if not aps:
-            self._log(style("No Access Points in range or no WLAN interface available!", Colours.FG.BRIGHT_RED))
+            self._log(style(f"No Access Points in range or no WLAN interface available (with {self.scanner})!", Colours.FG.BRIGHT_RED))
             return
 
         self._log(f"Updated info for {len(aps)} access points.")
@@ -51,7 +77,31 @@ class Scanner:
     def aps_to_dict(aps):
         return { (ap['ssid'], ap['bssid']) : ap['quality'] for ap in aps}
 
+    def get_ap_distance(self, signal_strength_dbm, strategy=2, signal_frequency=2.4, signal_attentuation=3, signal_strength_ref=-50, signal_dist_ref=4):
+        if strategy == 1:
+            return self._calc_signal_distance_simple(signal_strength_dbm,
+                                                     signal_frequency=signal_frequency)
+        elif strategy == 2:
+            return self._calc_signal_distance(signal_strength_dbm,
+                                              signal_attentuation = signal_attentuation,
+                                              signal_strength_ref = signal_strength_ref,
+                                              signal_dist_ref     = signal_dist_ref)
+        self._log(style("Unknown strategy?", Colours.FG.BRIGHT_RED))
+        return -1
+
     ###########################################################################
+
+    @staticmethod
+    def _calc_signal_distance_simple(signal_strength_dbm, signal_frequency=2.4):
+        exp = (27.55 - (20 * math.log10(signal_frequency * 1000)) + abs(signal_strength_dbm)) / 20.0
+        return round(10 ** exp, 4)
+
+    @staticmethod
+    def _calc_signal_distance(signal_strength_dbm, signal_attentuation=3, signal_strength_ref=-50, signal_dist_ref=4):
+        beta_numerator   = float(signal_strength_ref - signal_strength_dbm)
+        beta_denominator = float(10 * signal_attentuation)
+        beta = beta_numerator / beta_denominator
+        return round((10**beta) * signal_dist_ref, 4)
 
     @staticmethod
     def _handle_print(self):
