@@ -14,6 +14,6 @@ def get_fspl(dist, freq):
     return fspl
 
 
-dist = get_distance(-53, 2412)
+dist = get_distance(-47, 2457)
 dist2 = getDistanceFromAP(-83)
 print(dist)
