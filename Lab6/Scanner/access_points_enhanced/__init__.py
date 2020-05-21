@@ -23,6 +23,7 @@ def rssi_to_quality(rssi):
     return 2 * (rssi + 100)
 
 def quality_to_rssi(quality):
+    quality = float(quality)
     if quality <= 0:
         return -100
     elif quality >= 100:

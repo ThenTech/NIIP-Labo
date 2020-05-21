@@ -23,6 +23,7 @@ class Locations:
         "00:14:5C:8C:EE:98" : Point(  3.70,  1.20),  # ItHurtsWhenIP
         "C0:25:E9:E0:EE:6E" : Point(  0.00,  9.00),  # G-Spot
         "76:A8:FB:BF:90:BD" : Point(  1.80,  3.30),  # BramSpot
+        "BE:86:B9:99:ED:D3" : Point(  1.80,  3.30),  # BramSpot
     }
 
     _NOT_GROUND_LEVEL = (
@@ -110,7 +111,7 @@ class Scanner:
     def aps_to_dict(aps):
         return { (ap['ssid'], ap['bssid']) : ap['quality'] for ap in aps}
 
-    def get_ap_distance(self, signal_strength_dbm, strategy=2, signal_frequency=2.4, signal_attentuation=3, signal_strength_ref=-50, signal_dist_ref=4):
+    def get_ap_distance(self, signal_strength_dbm, strategy=2, signal_frequency=2.4, signal_attentuation=3, signal_strength_ref=-58, signal_dist_ref=2):
         if strategy == 1:
             return self._calc_signal_distance_simple(signal_strength_dbm,
                                                      signal_frequency=signal_frequency)
