@@ -2,6 +2,8 @@ from access_points import get_scanner
 import traceback
 import math
 import time
+import matplotlib.pyplot as plt
+
 
 from colours import Colours, style
 from threads import Threading
@@ -10,16 +12,17 @@ from positioning import Position, Point
 
 class Locations:
     _LUT = {
-        "4c:ed:fb:a6:00:bc" : Point(  1.01, 5.01),  # Vibenet_5G (boven)
-        "4c:ed:fb:a6:00:b8" : Point(  1.00, 5.00),  # Vibenet (boven)
-        "60:45:cb:59:f0:51" : Point(  0.00, 0.00),  # Vibenet (onder)     ~ 9m
-        "60:45:cb:59:f0:54" : Point(  0.01, 0.01),  # Vibenet_5G (onder)
-        "c8:d1:2a:89:c5:80" : Point(-20.00, 8.00),  # telenet-6736672
+        "4c:ed:fb:a6:00:bc" : Point(  1.01, -5.01),  # Vibenet_5G (boven)
+        "4c:ed:fb:a6:00:b8" : Point(  1.00, -5.00),  # Vibenet (boven)
+        "60:45:cb:59:f0:51" : Point(  0.00,  0.00),  # Vibenet (onder)     ~ 9m
+        "60:45:cb:59:f0:54" : Point(  0.01,  0.01),  # Vibenet_5G (onder)
+        "c8:d1:2a:89:c5:80" : Point(-20.00, -8.00),  # telenet-6736672
+        "96:5e:e3:af:4d:81" : Point(  5.00, -2.00),  # Synchrotron
 
-        "50:C7:BF:FE:39:A7" : Point(0, 0),  # Eskettiiit
-        "00:14:5C:8C:EE:98" : Point(0, 0),  # ItHurtsWhenIP
-        "C0:25:E9:E0:EE:6E" : Point(0, 0),  # G-Spot
-        "76:A8:FB:BF:90:BD" : Point(0, 0),  # BramSpot
+        # "50:C7:BF:FE:39:A7" : Point(  0.00,  0.00),  # Eskettiiit
+        "00:14:5C:8C:EE:98" : Point(  3.70,  1.20),  # ItHurtsWhenIP
+        "C0:25:E9:E0:EE:6E" : Point(  0.00,  9.00),  # G-Spot
+        "76:A8:FB:BF:90:BD" : Point(  1.80,  3.30),  # BramSpot
     }
 
     _NOT_GROUND_LEVEL = (
@@ -45,6 +48,7 @@ class Scanner:
         self.access_points = {}
         self.access_points_lock = Threading.new_lock()
 
+        self.current_aps = tuple()
         self.current_location = Point(0, 0)
 
     ###########################################################################
@@ -141,14 +145,15 @@ class Scanner:
         beta_denominator = float(10 * signal_attentuation)
         beta = beta_numerator / beta_denominator
         return round((10**beta) * signal_dist_ref, 4)
+
     @staticmethod
-    def _quality_to_dbm(signal_strength_percentage):
-        if signal_strength_percentage <= 0:
-            return -100 
-        elif signal_strength_percentage >= 100:
+    def _quality_to_dbm(sig_percent):
+        if sig_percent <= 0:
+            return -100
+        elif sig_percent >= 100:
             return -50
         else:
-            return (signal_strength_percentage/2) - 100
+            return (sig_percent / 2) - 100
 
     def _handle_print(self):
         print(self)
@@ -160,24 +165,61 @@ class Scanner:
             self._err(e, "Sampling ")
 
     def _handle_position(self):
-        positions = []
+        positions_filtered = []
 
         with self.access_points_lock:
             for (ssid, bssid), quality in self.access_points.items():
-                point = Locations.get_point(bssid, ground_only=False)
+                point = Locations.get_point(bssid, ground_only=True)
+                is_5g = "5G" in ssid.upper()
 
-                if point:
-                    radius = quality  # TODO convert % to dBm
-                    positions.append(Position(point, radius))
+                if point and not is_5g:
+                    radius = self._quality_to_dbm(quality)
+                    radius = self.get_ap_distance(radius,
+                                                  signal_frequency=5.0 if is_5g else 2.4,
+                                                  signal_attentuation=5.0)
+                    positions_filtered.append(Position((ssid, bssid), point, radius))
 
-        if len(positions) > 2:
-            positions = list(sorted(positions, key=lambda x: x.radius, reverse=True))
-            p1, p2, p3 = positions[0], positions[1], positions[2]
+        if len(positions_filtered) > 2:
+            pos_sorted = list(sorted(positions_filtered, key=lambda x: x.radius, reverse=False))
+            p1, p2, p3 = pos_sorted[0], pos_sorted[1], pos_sorted[2]
 
+            self.current_aps = (p1, p2, p3)
             self.current_location = p1.intersection(p2, p3)
 
+            print("\n".join(map(str, self.current_aps)))
             print(style("Updated position: ", Colours.FG.GREEN) \
                 + style(f"{self.current_location}", Colours.FG.BRIGHT_GREEN))
+
+    def _handle_plot(self):
+        plt.axis([-400, 400, -400, 400])
+        plt.xlabel('X axis (m)')
+        plt.ylabel('Y axis (m)')
+        ax = plt.gca()
+
+        for p in self.current_aps:
+            plt.plot(p.location.x, p.location.y,'ro')
+            ax.add_artist(plt.Circle((p.location.x, p.location.y), p.radius, color='r', fill=False, clip_on=True))
+            plt.annotate(f"{p.name[0]}\n{round(p.radius, 2)} m",
+                         xy=(p.location.x, p.location.y),
+                         xycoords='data',
+                         xytext=(-30, +40),
+                         textcoords='offset points',
+                         fontsize=10,
+                         arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
+
+        plt.plot(self.current_location.x, self.current_location.y, 'bo')
+        plt.annotate(f"Device\n{self.current_location}",
+                     xy=(self.current_location.x, self.current_location.y),
+                     xycoords='data',
+                     xytext=(+0, -30),
+                     textcoords='offset points',
+                     fontsize=10,
+                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
+
+        plt.xlim(-50, 50)
+        plt.ylim(-50, 50)
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
 
     def _handle_clear(self):
         with self.access_points_lock:
@@ -192,10 +234,11 @@ class Commands:
     PRINT_CURRENT = "print"
     SAMPLE        = "sample"
     POSITION      = "position"
+    PLOT          = "plot"
     CLEAR         = "clear"
     EXIT          = "exit"
 
-    CHOICES = ( PRINT_CURRENT, SAMPLE, POSITION, CLEAR, EXIT )
+    CHOICES = ( PRINT_CURRENT, SAMPLE, POSITION, PLOT, CLEAR, EXIT )
 
     @staticmethod
     def handle_cmd(cmd, scanner):
@@ -211,6 +254,7 @@ class Commands:
             Commands.PRINT_CURRENT : scanner._handle_print,
             Commands.SAMPLE        : scanner._handle_sample,
             Commands.POSITION      : scanner._handle_position,
+            Commands.PLOT          : scanner._handle_plot,
             Commands.CLEAR         : scanner._handle_clear,
             Commands.EXIT          : scanner._handle_exit,
         }
