@@ -106,7 +106,7 @@ print ln
 
 ind=[]
 i=0
-while(i<3):
+while(i<2):
 	ind.append(ln.index(min(ln)))
 	ln[ln.index(min(ln))]=max(ln)+1
 	i+=1
@@ -118,18 +118,18 @@ for j in ind:
 
 d1=(x1**2)+(y1**2)-(float(dict_wifi[ind[0]][5])**2)
 d2=(x2**2)+(y2**2)-(float(dict_wifi[ind[1]][5])**2)
-d3=(x3**2)+(y3**2)-(float(dict_wifi[ind[2]][5])**2)
+# d3=(x3**2)+(y3**2)-(float(dict_wifi[ind[2]][5])**2)
 plt.plot(x1,y1,'ro')
 plt.annotate(dict_wifi[ind[0]][0]+'\n'+str(round(float(dict_wifi[ind[0]][5]),2))+'mts',xy=(x1,y1),xycoords='data',xytext=(-30,+40),textcoords='offset points',fontsize=10,arrowprops=dict(arrowstyle="->",connectionstyle="arc3,rad=.2"))
 plt.plot(x2,y2,'ro')
 plt.annotate(dict_wifi[ind[1]][0]+'\n'+str(round(float(dict_wifi[ind[1]][5]),2))+'mts',xy=(x2,y2),xycoords='data',xytext=(+30,+40),textcoords='offset points',fontsize=10,arrowprops=dict(arrowstyle="->",connectionstyle="arc3,rad=.2"))
-plt.plot(x3,y3,'ro') 
-plt.annotate(dict_wifi[ind[2]][0]+'\n'+str(round(float(dict_wifi[ind[2]][5]),2))+'mts',xy=(x3,y3),xycoords='data',xytext=(+30,-40),textcoords='offset points',fontsize=10,arrowprops=dict(arrowstyle="->",connectionstyle="arc3,rad=.2"))
+# plt.plot(x3,y3,'ro') 
+# plt.annotate(dict_wifi[ind[2]][0]+'\n'+str(round(float(dict_wifi[ind[2]][5]),2))+'mts',xy=(x3,y3),xycoords='data',xytext=(+30,-40),textcoords='offset points',fontsize=10,arrowprops=dict(arrowstyle="->",connectionstyle="arc3,rad=.2"))
 #A=2*x*(x2-x1)+2*y*(y2-y1)+d1-d2
 #B=2*x*(x3-x1)+2*y*(y3-y1)+d1-d3
 x,y=symbols('x,y',real=True)
-system=[(2*x*(x2-x1))+(2*y*(y2-y1))+d1-d2,(2*x*(x3-x1))+(2*y*(y3-y1))+d1-d3]
-#system=[2*x+3*y-5,3*x+2*y-5]
+#system=[(2*x*(x2-x1))+(2*y*(y2-y1))+d1-d2,(2*x*(x3-x1))+(2*y*(y3-y1))+d1-d3]
+system=[2*x+3*y-5,3*x+2*y-5]
 q={}
 q=solve(system,x,y)
 x=q[x]
