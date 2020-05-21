@@ -18,6 +18,42 @@ class Point:
         return ((self.x - p.x) ** 2 + (self.y - p.y) ** 2) ** 0.5
 
 
+class Quality:
+    TAG_PERCENTAGE = 0
+    TAG_DBM        = 1
+
+    VALUE_COUNT = 6
+
+    def __init__(self, value=0, tag=TAG_PERCENTAGE):
+        self.tag = tag
+
+        self.average   = 0
+        self.avg_idx   = 0
+        self.avg_sum   = 0
+        self.avg_cache = [0.0] * Quality.VALUE_COUNT
+
+    def get(self):
+        return self.average
+
+    def is_percentage(self):
+        return self.tag == Quality.TAG_PERCENTAGE
+
+    def is_dbm(self):
+        return self.tag == Quality.TAG_DBM
+
+    def update(self, new_value):
+        self.avg_sum -= self.avg_cache[self.avg_idx]   # Remove oldest measurement
+        self.avg_cache[self.avg_idx] = new_value
+
+        self.avg_sum += new_value
+        self.avg_idx += 1
+
+        if self.avg_idx == Quality.VALUE_COUNT:
+            # Only update after SIZE measurements, else avg is < SIZE numbers / SIZE and lower than expected
+            self.average = self.avg_sum / Quality.VALUE_COUNT
+            self.avg_idx = 0
+
+
 class Position:
     def __init__(self, name, point, radius):
         super().__init__()

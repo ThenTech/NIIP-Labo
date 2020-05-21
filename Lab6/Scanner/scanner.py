@@ -1,4 +1,4 @@
-from access_points import get_scanner
+from access_points_enhanced import get_scanner
 import traceback
 import math
 import time
@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from colours import Colours, style
 from threads import Threading
-from positioning import Position, Point
+from positioning import Position, Point, Quality
 
 
 class Locations:
@@ -37,9 +37,13 @@ class Locations:
 
 
 class Scanner:
-    def __init__(self):
+    class Mode:
+        BASIC = 0
+        SNIFFING = 1
+
+    def __init__(self, mode=Mode.BASIC, interface="wlp2s0", force_iwlist=False):
         super().__init__()
-        self.scanner = get_scanner()
+        self.scanner = get_scanner(interface, force_iwlist)
         self.scanner_lock = Threading.new_lock()
 
         self.sampling_thread = None
@@ -61,11 +65,12 @@ class Scanner:
     def __str__(self):
         with self.access_points_lock:
             if self.access_points:
-                printed = "\n".join("{0:<30} {1}: {2}%".format(
+                printed = "\n".join("{0:<30} {1}: {2}{3}".format(
                         style(ssid , Colours.FG.BRIGHT_YELLOW),
                         style(f"({bssid})", Colours.FG.BRIGHT_BLACK),
-                        v
-                    ) for (ssid, bssid), v in sorted(self.access_points.items(), key=lambda x: x[1]))
+                        round(v.get(), 2),
+                        "%" if v.is_percentage() else "dBm"
+                    ) for (ssid, bssid), v in sorted(self.access_points.items(), key=lambda x: x[1].get()))
             else:
                 printed = style("No APs sampled! Run sample command first.", Colours.FG.BRIGHT_RED)
 
@@ -95,7 +100,11 @@ class Scanner:
         if log:
             self._log(f"Updated info for {len(aps)} access points.")
         with self.access_points_lock:
-            self.access_points.update(self.aps_to_dict(aps))
+            for (ssid, bssid), rssi in self.aps_to_dict(aps).items():
+                if (ssid, bssid) in self.access_points:
+                    self.access_points[(ssid, bssid)].update(rssi)
+                else:
+                    self.access_points[(ssid, bssid)] = Quality(value=rssi, tag=Quality.TAG_DBM)
 
     @staticmethod
     def aps_to_dict(aps):
@@ -128,7 +137,7 @@ class Scanner:
         print(style("Command list:", Colours.FG.BLACK, Colours.BG.YELLOW) + " " + ", ".join(Commands.CHOICES))
 
         while True:
-            print(style("Enter command: ", Colours.FG.BLACK, Colours.BG.YELLOW))
+            print(style("Enter command:", Colours.FG.BLACK, Colours.BG.YELLOW), end=" ")
             raw = input()
             Commands.handle_cmd(raw, self)
 
@@ -169,15 +178,17 @@ class Scanner:
 
         with self.access_points_lock:
             for (ssid, bssid), quality in self.access_points.items():
-                point = Locations.get_point(bssid, ground_only=True)
+                point = Locations.get_point(bssid, ground_only=False)
                 is_5g = "5G" in ssid.upper()
 
                 if point and not is_5g:
-                    radius = self._quality_to_dbm(quality)
-                    radius = self.get_ap_distance(radius,
+                    radius = self.get_ap_distance(quality.get(),
                                                   signal_frequency=5.0 if is_5g else 2.4,
                                                   signal_attentuation=5.0)
                     positions_filtered.append(Position((ssid, bssid), point, radius))
+                elif not point:
+                    pass
+                    # print(style(f"Unknown AP {ssid} ({bssid}), please add it to the list?", Colours.FG.BRIGHT_RED))
 
         if len(positions_filtered) > 2:
             pos_sorted = list(sorted(positions_filtered, key=lambda x: x.radius, reverse=False))
@@ -189,8 +200,12 @@ class Scanner:
             print("\n".join(map(str, self.current_aps)))
             print(style("Updated position: ", Colours.FG.GREEN) \
                 + style(f"{self.current_location}", Colours.FG.BRIGHT_GREEN))
+        else:
+            print(style(f"Not enough APs in range to get position? ({len(positions_filtered)})", Colours.FG.BRIGHT_RED))
 
     def _handle_plot(self):
+        self._handle_position()
+
         plt.axis([-400, 400, -400, 400])
         plt.xlabel('X axis (m)')
         plt.ylabel('Y axis (m)')
