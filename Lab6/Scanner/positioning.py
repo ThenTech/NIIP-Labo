@@ -6,7 +6,7 @@ class Point:
         self.y = y
 
     def __str__(self):
-        return "(" + ", ".join(map(str, (self.x, self.y))) + ")"
+        return "(" + ", ".join(map(str, map(lambda x: round(x, 2), (self.x, self.y)))) + ")"
 
     def __eq__(self, value):
         return self.x == value.x and self.y == value.y
@@ -19,17 +19,20 @@ class Point:
 
 
 class Position:
-    def __init__(self, point, radius):
+    def __init__(self, name, point, radius):
         super().__init__()
 
         if not isinstance(point, Point):
             raise Exception("[Point::distance_to] Argument is not a point!")
 
+        self.name     = name
         self.location = point
         self.radius   = radius
 
     def __str__(self):
-        return f"<Position {self.location}, r={self.radius}>"
+        return f"<Position {self.name} @ {self.location}, r={self.radius}>"
+
+    __repr__ = __str__
 
     def intersection(self, p2, p3):
         return self._calc_intersetion(
