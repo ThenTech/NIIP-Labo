@@ -6,7 +6,7 @@ class Point:
         self.y = y
 
     def __str__(self):
-        return "(" + ", ".join(map(str, map(lambda x: round(x, 2), (self.x, self.y)))) + ")"
+        return "(" + ", ".join(map(lambda x: f"{round(x, 2):+5.2f}", (self.x, self.y))) + ")"
 
     def __eq__(self, value):
         return self.x == value.x and self.y == value.y
@@ -104,8 +104,8 @@ if __name__ == "__main__":
     print(zero.distance_to(onexy) == 2**0.5)
     print(zero.distance_to(onex) == 1)
 
-    center = Position(zero, 0.5)
-    onedxy = Position(onexy, 0.5)
-    onedx  = Position(onex, 0.5)
+    center = Position("center", zero, 0.5)
+    onedxy = Position("onedxy", onexy, 0.5)
+    onedx  = Position("onedx", onex, 0.5)
 
     print(center.intersection(onedxy, onedx) == Point(0.5, 0.5))

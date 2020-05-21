@@ -58,10 +58,13 @@ class Scanner:
 
     ###########################################################################
 
-    def __del__(self):
+    def _kill_threads(self):
         if self.sampling_thread:
             self.sampling_thread_running = False
             self.sampling_thread.join()
+
+    def __del__(self):
+        self._kill_threads()
 
     def __str__(self):
         with self.access_points_lock:
@@ -75,7 +78,7 @@ class Scanner:
             else:
                 printed = style("No APs sampled! Run sample command first.", Colours.FG.BRIGHT_RED)
 
-        return style("Scanner Access Points:", Colours.FG.YELLOW) + "\n" + printed
+        return style("Scanner Access Points:", Colours.FG.MAGENTA) + "\n" + printed
 
     def _log(self, msg):
         print(style(f"[Scanner]", Colours.FG.YELLOW), msg)
@@ -135,12 +138,16 @@ class Scanner:
     def start_interactive(self):
         self.sampling_thread = Threading.new_thread(self._sample_thread, (1,))
 
+        time.sleep(0.2)
         print(style("Command list:", Colours.FG.BLACK, Colours.BG.YELLOW) + " " + ", ".join(Commands.CHOICES))
 
         while True:
-            print(style("Enter command:", Colours.FG.BLACK, Colours.BG.YELLOW), end=" ")
-            raw = input()
-            Commands.handle_cmd(raw, self)
+            try:
+                print(style("Enter command:", Colours.FG.BLACK, Colours.BG.YELLOW), end=" ")
+                raw = input()
+                Commands.handle_cmd(raw, self)
+            except KeyboardInterrupt:
+                self._handle_exit()
 
     ###########################################################################
 
@@ -155,15 +162,6 @@ class Scanner:
         beta_denominator = float(10 * signal_attentuation)
         beta = beta_numerator / beta_denominator
         return round((10**beta) * signal_dist_ref, 4)
-
-    @staticmethod
-    def _quality_to_dbm(sig_percent):
-        if sig_percent <= 0:
-            return -100
-        elif sig_percent >= 100:
-            return -50
-        else:
-            return (sig_percent / 2) - 100
 
     def _handle_print(self):
         print(self)
@@ -187,9 +185,8 @@ class Scanner:
                                                   signal_frequency=5.0 if is_5g else 2.4,
                                                   signal_attentuation=5.0)
                     positions_filtered.append(Position((ssid, bssid), point, radius))
-                elif not point:
-                    pass
-                    # print(style(f"Unknown AP {ssid} ({bssid}), please add it to the list?", Colours.FG.BRIGHT_RED))
+                # elif not point:
+                #     print(style(f"Unknown AP {ssid} ({bssid}), please add it to the list?", Colours.FG.BRIGHT_RED))
 
         if len(positions_filtered) > 2:
             pos_sorted = list(sorted(positions_filtered, key=lambda x: x.radius, reverse=False))
@@ -198,8 +195,15 @@ class Scanner:
             self.current_aps = (p1, p2, p3)
             self.current_location = p1.intersection(p2, p3)
 
-            print("\n".join(map(str, self.current_aps)))
-            print(style("Updated position: ", Colours.FG.GREEN) \
+            print(style("Estimated AP distances:", Colours.FG.MAGENTA))
+            print("\n".join("{0:<30} {1} @ {2}: {3}m".format(
+                    style(p.name[0] , Colours.FG.BRIGHT_YELLOW),
+                    style(f"({p.name[1]})", Colours.FG.BRIGHT_BLACK),
+                    p.location,
+                    f"{round(p.radius, 2):.2f}"
+                ) for p in self.current_aps))
+
+            print(style("Updated device position: ", Colours.FG.GREEN) \
                 + style(f"{self.current_location}", Colours.FG.BRIGHT_GREEN))
         else:
             print(style(f"Not enough APs in range to get position? ({len(positions_filtered)})", Colours.FG.BRIGHT_RED))
@@ -243,6 +247,7 @@ class Scanner:
             self.lowest_quality, self.highest_quality = "", ""
 
     def _handle_exit(self):
+        self._kill_threads()
         exit(0)
 
 
