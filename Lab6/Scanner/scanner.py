@@ -141,6 +141,14 @@ class Scanner:
         beta_denominator = float(10 * signal_attentuation)
         beta = beta_numerator / beta_denominator
         return round((10**beta) * signal_dist_ref, 4)
+    @staticmethod
+    def _quality_to_dbm(signal_strength_percentage):
+        if signal_strength_percentage <= 0:
+            return -100 
+        elif signal_strength_percentage >= 100:
+            return -50
+        else:
+            return (signal_strength_percentage/2) - 100
 
     def _handle_print(self):
         print(self)
