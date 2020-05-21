@@ -1,17 +1,20 @@
 from access_points import get_scanner
-from colours import Colours, style
 import traceback
 import math
+import time
 
+from colours import Colours, style
+from threads import Threading
 from positioning import Position, Point
 
 
 class Locations:
     _LUT = {
-        "4c:ed:fb:a6:00:bc" : Point(3, 4),  # Vibenet_5G (boven)
-        "4c:ed:fb:a6:00:b8" : Point(3, 4),  # Vibenet (boven)
-        "60:45:cb:59:f0:51" : Point(0, 0),  # Vibenet (onder)     ~ 9m
-        "60:45:cb:59:f0:54" : Point(0, 0),  # Vibenet_5G (onder)
+        "4c:ed:fb:a6:00:bc" : Point(  1.01, 5.01),  # Vibenet_5G (boven)
+        "4c:ed:fb:a6:00:b8" : Point(  1.00, 5.00),  # Vibenet (boven)
+        "60:45:cb:59:f0:51" : Point(  0.00, 0.00),  # Vibenet (onder)     ~ 9m
+        "60:45:cb:59:f0:54" : Point(  0.01, 0.01),  # Vibenet_5G (onder)
+        "c8:d1:2a:89:c5:80" : Point(-20.00, 8.00),  # telenet-6736672
 
         "50:C7:BF:FE:39:A7" : Point(0, 0),  # Eskettiiit
         "00:14:5C:8C:EE:98" : Point(0, 0),  # ItHurtsWhenIP
@@ -34,19 +37,33 @@ class Scanner:
     def __init__(self):
         super().__init__()
         self.scanner = get_scanner()
+        self.scanner_lock = Threading.new_lock()
+
+        self.sampling_thread = None
+        self.sampling_thread_running = True
+
         self.access_points = {}
+        self.access_points_lock = Threading.new_lock()
+
+        self.current_location = Point(0, 0)
 
     ###########################################################################
 
+    def __del__(self):
+        if self.sampling_thread:
+            self.sampling_thread_running = False
+            self.sampling_thread.join()
+
     def __str__(self):
-        if self.access_points:
-            printed = "\n".join("{0:<30} {1}: {2}%".format(
-                    style(ssid , Colours.FG.BRIGHT_YELLOW),
-                    style(f"({bssid})", Colours.FG.BRIGHT_BLACK),
-                    v
-                ) for (ssid, bssid), v in sorted(self.access_points.items(), key=lambda x: x[1]))
-        else:
-            printed = style("No APs sampled! Run sample command first.", Colours.FG.BRIGHT_RED)
+        with self.access_points_lock:
+            if self.access_points:
+                printed = "\n".join("{0:<30} {1}: {2}%".format(
+                        style(ssid , Colours.FG.BRIGHT_YELLOW),
+                        style(f"({bssid})", Colours.FG.BRIGHT_BLACK),
+                        v
+                    ) for (ssid, bssid), v in sorted(self.access_points.items(), key=lambda x: x[1]))
+            else:
+                printed = style("No APs sampled! Run sample command first.", Colours.FG.BRIGHT_RED)
 
         return style("Scanner Access Points:", Colours.FG.YELLOW) + "\n" + printed
 
@@ -62,16 +79,19 @@ class Scanner:
 
     ###########################################################################
 
-    def sample(self):
+    def sample(self, log=True):
         # Calls on windows: `netsh wlan show networks mode=bssid`
-        aps = self.scanner.get_access_points()
+        with self.scanner_lock:
+            aps = self.scanner.get_access_points()
 
-        if not aps:
+        if not aps and log:
             self._log(style(f"No Access Points in range or no WLAN interface available (with {self.scanner})!", Colours.FG.BRIGHT_RED))
             return
 
-        self._log(f"Updated info for {len(aps)} access points.")
-        self.access_points.update(self.aps_to_dict(aps))
+        if log:
+            self._log(f"Updated info for {len(aps)} access points.")
+        with self.access_points_lock:
+            self.access_points.update(self.aps_to_dict(aps))
 
     @staticmethod
     def aps_to_dict(aps):
@@ -91,6 +111,25 @@ class Scanner:
 
     ###########################################################################
 
+    def _sample_thread(self, interval_s=1):
+        self._log(f"Start sampling thread ({interval_s}s delay)...")
+
+        while self.sampling_thread_running:
+            self._handle_sample(log=False)
+            time.sleep(interval_s)
+
+    def start_interactive(self):
+        self.sampling_thread = Threading.new_thread(self._sample_thread, (1,))
+
+        print(style("Command list:", Colours.FG.BLACK, Colours.BG.YELLOW) + " " + ", ".join(Commands.CHOICES))
+
+        while True:
+            print(style("Enter command: ", Colours.FG.BLACK, Colours.BG.YELLOW))
+            raw = input()
+            Commands.handle_cmd(raw, self)
+
+    ###########################################################################
+
     @staticmethod
     def _calc_signal_distance_simple(signal_strength_dbm, signal_frequency=2.4):
         exp = (27.55 - (20 * math.log10(signal_frequency * 1000)) + abs(signal_strength_dbm)) / 20.0
@@ -103,23 +142,40 @@ class Scanner:
         beta = beta_numerator / beta_denominator
         return round((10**beta) * signal_dist_ref, 4)
 
-    @staticmethod
     def _handle_print(self):
         print(self)
 
-    @staticmethod
-    def _handle_sample(self):
+    def _handle_sample(self, log=True):
         try:
-            self.sample()
+            self.sample(log)
         except Exception as e:
             self._err(e, "Sampling ")
 
-    @staticmethod
-    def _handle_clear(self):
-        self.access_points = {}
-        self.lowest_quality, self.highest_quality = "", ""
+    def _handle_position(self):
+        positions = []
 
-    @staticmethod
+        with self.access_points_lock:
+            for (ssid, bssid), quality in self.access_points.items():
+                point = Locations.get_point(bssid, ground_only=False)
+
+                if point:
+                    radius = quality  # TODO convert % to dBm
+                    positions.append(Position(point, radius))
+
+        if len(positions) > 2:
+            positions = list(sorted(positions, key=lambda x: x.radius, reverse=True))
+            p1, p2, p3 = positions[0], positions[1], positions[2]
+
+            self.current_location = p1.intersection(p2, p3)
+
+            print(style("Updated position: ", Colours.FG.GREEN) \
+                + style(f"{self.current_location}", Colours.FG.BRIGHT_GREEN))
+
+    def _handle_clear(self):
+        with self.access_points_lock:
+            self.access_points = {}
+            self.lowest_quality, self.highest_quality = "", ""
+
     def _handle_exit(self):
         exit(0)
 
@@ -127,10 +183,11 @@ class Scanner:
 class Commands:
     PRINT_CURRENT = "print"
     SAMPLE        = "sample"
+    POSITION      = "position"
     CLEAR         = "clear"
     EXIT          = "exit"
 
-    CHOICES = ( PRINT_CURRENT, SAMPLE, CLEAR, EXIT )
+    CHOICES = ( PRINT_CURRENT, SAMPLE, POSITION, CLEAR, EXIT )
 
     @staticmethod
     def handle_cmd(cmd, scanner):
@@ -145,11 +202,12 @@ class Commands:
         handler = {
             Commands.PRINT_CURRENT : scanner._handle_print,
             Commands.SAMPLE        : scanner._handle_sample,
+            Commands.POSITION      : scanner._handle_position,
             Commands.CLEAR         : scanner._handle_clear,
             Commands.EXIT          : scanner._handle_exit,
         }
 
-        handler.get(cmd)(scanner)
+        handler.get(cmd)()
 
 
 if __name__ == "__main__":
@@ -162,9 +220,4 @@ if __name__ == "__main__":
     """
 
     wifi_scanner = Scanner()
-
-    print(style("Command list:", Colours.FG.BLACK, Colours.BG.YELLOW) + " " + ", ".join(Commands.CHOICES))
-
-    while True:
-        raw = input("Enter command: ")
-        Commands.handle_cmd(raw, wifi_scanner)
+    wifi_scanner.start_interactive()
