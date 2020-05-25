@@ -4,6 +4,6 @@
 Make sure the following packages are installed:
 
 ```
-pip install access_points scapy colorama
+pip install scapy colorama
 ```
 

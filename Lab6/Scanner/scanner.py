@@ -13,8 +13,8 @@ from sniffer import Sniffer
 
 class Locations:
     _LUT = {
-        "4C:ED:FB:A6:00:BC" : Point(  1.01, -5.01),  # Vibenet_5G (boven)
-        "4C:ED:FB:A6:00:B8" : Point(  1.00, -5.00),  # Vibenet (boven)
+        "4C:ED:FB:A6:00:BC" : Point(  0.01, -3.01),  # Vibenet_5G (boven)
+        "4C:ED:FB:A6:00:B8" : Point(  0.00, -3.00),  # Vibenet (boven)
         "60:45:CB:59:F0:51" : Point(  0.00,  0.00),  # Vibenet (onder)     ~ 9m
         "60:45:CB:59:F0:54" : Point(  0.01,  0.01),  # Vibenet_5G (onder)
         "C8:D1:2A:89:C5:80" : Point(-20.00, -8.00),  # telenet-6736672
@@ -51,7 +51,7 @@ class Scanner:
         TRILAT_ESTIM     = 1
         TRILAT_ESTIM_ALL = 2
 
-    def __init__(self, mode=Mode.BASIC, interface="wlp2s0", force_iwlist=False):
+    def __init__(self, mode=Mode.BASIC, interface="wlp2s0", force_iwlist=False, bg_img=""):
         super().__init__()
         self.scanner = None
 
@@ -77,6 +77,23 @@ class Scanner:
         self.last_mode = Scanner.PositioningMode.TRILATERATION
         self.current_aps = tuple()
         self.current_location = Point(0, 0)
+
+        self.bg_img = None
+        self.bg_loc = None
+
+        if bg_img:
+            try:
+                fname, params     = bg_img.split(';', 1)
+                xloc, yloc, scale = map(float, params.split(';'))
+
+                self.bg_img = plt.imread(fname, format='png')
+
+                size_y, size_x = self.bg_img.shape[1], self.bg_img.shape[0]
+                left_bottom    = Point(-float(xloc) / scale, -float(yloc) / scale)
+                right_top      = Point(left_bottom.x + size_x / scale, left_bottom.y + size_y / scale)
+                self.bg_loc    = (left_bottom, right_top)
+            except Exception as e:
+                self._log(style(f"Could not parse background image: {bg_img}\n{e}", Colours.FG.RED))
 
     ###########################################################################
 
@@ -279,9 +296,13 @@ class Scanner:
                         arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2") if single else \
                                    None)
 
-        plt.xlim(-50, 50)
-        plt.ylim(-50, 50)
-        plt.gca().set_aspect('equal', adjustable='box')
+        if self.bg_img is not None:
+            # (left, right, bottom, top)
+            plt.imshow(self.bg_img, zorder=0, extent=(self.bg_loc[0].x, self.bg_loc[1].x, self.bg_loc[0].y, self.bg_loc[1].y))
+
+        plt.xlim(-25, 25)
+        plt.ylim(-25, 25)
+        ax.set_aspect('equal', adjustable='box')
         plt.show()
 
     def _handle_clear(self):
@@ -339,8 +360,26 @@ if __name__ == "__main__":
         BASIC        = 0    # Basic for Unix and Windows based on signal strength %
         BASIC_IWLIST = 1    # Basic for Unix based on signal RSSI
         SNIFFING     = 2    # Advanced for Unix based on Beacon sniffer
-    """
 
-    mode = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1].lower() == "-m" else Scanner.Mode.SNIFFING
-    wifi_scanner = Scanner(mode=mode)
+        bg_img takes the form of:
+            "path;x_offset;y_offset;scale"
+        where (x_offset, y_offset) is the position of (0, 0) point (from left bottom corner)
+        and scale is the size in pixels of 1 unit.
+    """
+    # iface, mode, bg_img = "wlp2s0", Scanner.Mode.SNIFFING, "./locations/bram.png;10;10;180"
+    iface, mode, bg_img = "Wi-Fi", Scanner.Mode.BASIC, "./locations/william.png;478;973;101"
+
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] in ("-m", "--mode"):
+            mode = int(sys.argv[i+1])
+            i += 2
+        elif sys.argv[i] in ("-i", "--interface"):
+            bg_img = sys.argv[i+1]
+            i += 2
+        elif sys.argv[i] in ("-bg", "--background"):
+            bg_img = sys.argv[i+1]
+            i += 2
+
+    wifi_scanner = Scanner(mode=mode, interface=iface, bg_img=bg_img)
     wifi_scanner.start_interactive()
