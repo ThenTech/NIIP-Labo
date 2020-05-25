@@ -13,13 +13,13 @@ from sniffer import Sniffer
 
 class Locations:
     _LUT = {
-        "4c:ed:fb:a6:00:bc" : Point(  1.01, -5.01),  # Vibenet_5G (boven)
-        "4c:ed:fb:a6:00:b8" : Point(  1.00, -5.00),  # Vibenet (boven)
-        "60:45:cb:59:f0:51" : Point(  0.00,  0.00),  # Vibenet (onder)     ~ 9m
-        "60:45:cb:59:f0:54" : Point(  0.01,  0.01),  # Vibenet_5G (onder)
-        "c8:d1:2a:89:c5:80" : Point(-20.00, -8.00),  # telenet-6736672
-        "96:5e:e3:af:4d:81" : Point(  5.00, -2.00),  # Synchrotron
-        "16:30:a9:a5:2c:f9" : Point(  5.00, -2.00),  # Synchrotron
+        "4C:ED:FB:A6:00:BC" : Point(  1.01, -5.01),  # Vibenet_5G (boven)
+        "4C:ED:FB:A6:00:B8" : Point(  1.00, -5.00),  # Vibenet (boven)
+        "60:45:CB:59:F0:51" : Point(  0.00,  0.00),  # Vibenet (onder)     ~ 9m
+        "60:45:CB:59:F0:54" : Point(  0.01,  0.01),  # Vibenet_5G (onder)
+        "C8:D1:2A:89:C5:80" : Point(-20.00, -8.00),  # telenet-6736672
+        "96:5E:E3:AF:4D:81" : Point(  5.00, -2.00),  # Synchrotron
+        "16:30:A9:A5:2C:F9" : Point(  5.00, -2.00),  # Synchrotron
 
         # "50:C7:BF:FE:39:A7" : Point(  0.00,  0.00),  # Eskettiiit
         "00:14:5C:8C:EE:98" : Point(  3.70,  1.20),  # ItHurtsWhenIP
@@ -29,12 +29,13 @@ class Locations:
     }
 
     _NOT_GROUND_LEVEL = (
-        "4c:ed:fb:a6:00:bc", "4c:ed:fb:a6:00:b8",
+        "4C:ED:FB:A6:00:BC", "4C:ED:FB:A6:00:B8",
         "50:C7:BF:FE:39:A7", "C0:25:E9:E0:EE:6E"
     )
 
     @staticmethod
     def get_point(mac, ground_only=False):
+        mac = mac.upper()
         return Locations._LUT.get(mac, None) \
             if not ground_only or (ground_only and mac not in Locations._NOT_GROUND_LEVEL) else None
 
