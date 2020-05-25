@@ -3,11 +3,12 @@ import traceback
 import math
 import time
 import matplotlib.pyplot as plt
-
+import sys
 
 from colours import Colours, style
 from threads import Threading
 from positioning import Position, Point, Quality
+from sniffer import Sniffer
 
 
 class Locations:
@@ -39,12 +40,20 @@ class Locations:
 
 class Scanner:
     class Mode:
-        BASIC = 0
-        SNIFFING = 1
+        BASIC        = 0
+        BASIC_IWLIST = 1
+        SNIFFING     = 2
 
     def __init__(self, mode=Mode.BASIC, interface="wlp2s0", force_iwlist=False):
         super().__init__()
-        self.scanner = get_scanner(interface, force_iwlist)
+        self.scanner = None
+
+        if mode in (Scanner.Mode.BASIC, Scanner.Mode.BASIC_IWLIST):
+            self.scanner = get_scanner(interface, force_iwlist or mode == Scanner.Mode.BASIC_IWLIST)
+        elif mode in (Scanner.Mode.SNIFFING,):
+            self.scanner = Sniffer(interface=interface)
+            self.scanner.start()
+
         self.scanner_lock = Threading.new_lock()
 
         self.sampling_thread = None
@@ -285,12 +294,11 @@ class Commands:
 
 if __name__ == "__main__":
     """
-    Considerations:
-        - Add live plot mapping RSSI for all APs that were detected at one point?
-        - 2D representation of AP locations (unknown?) and RSSI as circles
-            -> intersection with _calc_intersetion() represents device location
-        - Something like: https://github.com/kootenpv/whereami
+        BASIC        = 0    # Basic for Unix and Windows based on signal strength %
+        BASIC_IWLIST = 1    # Basic for Unix based on signal RSSI
+        SNIFFING     = 2    # Advanced for Unix based on Beacon sniffer
     """
 
-    wifi_scanner = Scanner()
+    mode = int(sys.argv[2]) if sys.argv[1].lower() == "-m" else Scanner.Mode.BASIC
+    wifi_scanner = Scanner(mode=mode)
     wifi_scanner.start_interactive()
