@@ -27,7 +27,7 @@ class Sniffer:
                     self.access_points[packet.addr2] = packet
                     self._log(f"Access Point MAC: {packet.addr2} with SSID: {packet.info}\n{dump}")
 
-    def _handle_packet_thread(self, interface):
+    def _handle_packet_thread(self):
         sniff(iface=self.interface, prn=self._handle_packet)
 
     def start(self):

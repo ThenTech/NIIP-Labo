@@ -221,7 +221,7 @@ class IwlistWifiScanner(WifiScanner):
             line = line.strip()
             if line.startswith("Cell"):
                 if bssid is not None:
-                    ap = AccessPoint(ssid, bssid, quality, security)
+                    ap = AccessPoint(ssid, bssid, rssi, security)  # quality
                     results.append(ap)
                     security = []
                 bssid = ":".join(line.split(":")[1:]).strip()

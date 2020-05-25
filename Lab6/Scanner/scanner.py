@@ -55,7 +55,12 @@ class Scanner:
         self.scanner = None
 
         if mode in (Scanner.Mode.BASIC, Scanner.Mode.BASIC_IWLIST):
-            self.scanner = get_scanner(interface, force_iwlist or mode == Scanner.Mode.BASIC_IWLIST)
+            force_iwlist = force_iwlist or mode == Scanner.Mode.BASIC_IWLIST
+            self.scanner = get_scanner(interface, force_iwlist)
+
+            if force_iwlist:
+                # IWList needs sudo, so call to enter password first time
+                self.scanner.get_access_points()
         elif mode in (Scanner.Mode.SNIFFING,):
             self.scanner = Sniffer(interface=interface)
             self.scanner.start()
@@ -200,7 +205,8 @@ class Scanner:
                 if point and not is_5g:
                     radius = self.get_ap_distance(quality.get(),
                                                   signal_frequency=5.0 if is_5g else 2.4,
-                                                  signal_attentuation=5.0)
+                                                  signal_attentuation=5.0,
+                                                  signal_strength_ref=-51, signal_dist_ref=2.5)
                     positions_filtered.append(Position((ssid, bssid), point, radius))
                 # elif not point:
                 #     print(style(f"Unknown AP {ssid} ({bssid}), please add it to the list?", Colours.FG.BRIGHT_RED))
@@ -334,6 +340,6 @@ if __name__ == "__main__":
         SNIFFING     = 2    # Advanced for Unix based on Beacon sniffer
     """
 
-    mode = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1].lower() == "-m" else Scanner.Mode.BASIC
+    mode = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1].lower() == "-m" else Scanner.Mode.SNIFFING
     wifi_scanner = Scanner(mode=mode)
     wifi_scanner.start_interactive()
