@@ -193,7 +193,7 @@ class Scanner:
             p1, p2, p3 = pos_sorted[0], pos_sorted[1], pos_sorted[2]
 
             self.current_aps = (p1, p2, p3)
-            self.current_location = p1.intersection(p2, p3)
+            self.current_location = p1.get_intersection(p2, p3)
 
             print(style("Estimated AP distances:", Colours.FG.MAGENTA))
             print("\n".join("{0:<30} {1} @ {2}: {3}m".format(

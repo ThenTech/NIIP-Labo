@@ -1,4 +1,4 @@
-
+import math
 class Point:
     def __init__(self, x, y):
         super().__init__()
@@ -76,6 +76,53 @@ class Position:
             p2.location  , p2.radius,
             p3.location  , p3.radius
         )
+    def get_intersection(self, p2, p3):
+        intersection = self._calc_intersetion(self.location, self.radius, p2.location, p2.radius, p3.location, p3.radius)
+        p1_1, p1_2 = self._calc_intersection_with_circle(self.location, self.radius, p2.location, p2.radius)
+        p2_1, p2_2 = self._calc_intersection_with_circle(self.location, self.radius, p3.location, p3.radius)
+        p3_1, p3_2 = self._calc_intersection_with_circle(p2.location, p2.radius, p3.location, p3.radius)
+        positions = [p1_1, p1_2, p2_1, p2_2, p3_1, p3_2]
+        result = intersection
+        min_dist = math.inf
+        for p in positions:
+            dist = p.distance_to(intersection)
+            if dist < min_dist:
+                min_dist = dist
+                result = p 
+        return p
+
+    @staticmethod
+    def _calc_intersection_with_circle(p1, r1, p2, r2):
+        x0 = p1.x
+        y0 = p1.y 
+        x1 = p2.x 
+        y1 = p2.y 
+
+        d = math.sqrt((x1-x0)**2 + (y1-y0)**2)
+
+        #No intersection
+        if d > r1 +r2:
+            return None 
+        # One circle within other 
+        if d < abs(r1-r2):
+            return None
+        if d == 0 and r0 == r1:
+            return None 
+        
+        else: 
+            a = (r1**2 - r2 ** 2 + d**2)/(2*d)
+            h = math.sqrt(r1**2 - a**2)
+            x2=x0+a*(x1-x0)/d   
+            y2=y0+a*(y1-y0)/d   
+            x3=x2+h*(y1-y0)/d     
+            y3=y2-h*(x1-x0)/d 
+
+            x4=x2-h*(y1-y0)/d
+            y4=y2+h*(x1-x0)/d
+
+            return (Point(x3,y3), Point(x4, y4))
+
+
 
     @staticmethod
     def _calc_intersetion(p1, r1, p2, r2, p3, r3):
