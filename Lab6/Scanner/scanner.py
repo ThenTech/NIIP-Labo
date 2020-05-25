@@ -19,6 +19,7 @@ class Locations:
         "60:45:cb:59:f0:54" : Point(  0.01,  0.01),  # Vibenet_5G (onder)
         "c8:d1:2a:89:c5:80" : Point(-20.00, -8.00),  # telenet-6736672
         "96:5e:e3:af:4d:81" : Point(  5.00, -2.00),  # Synchrotron
+        "16:30:a9:a5:2c:f9" : Point(  5.00, -2.00),  # Synchrotron
 
         # "50:C7:BF:FE:39:A7" : Point(  0.00,  0.00),  # Eskettiiit
         "00:14:5C:8C:EE:98" : Point(  3.70,  1.20),  # ItHurtsWhenIP
@@ -44,6 +45,11 @@ class Scanner:
         BASIC_IWLIST = 1
         SNIFFING     = 2
 
+    class PositioningMode:
+        TRILATERATION    = 0
+        TRILAT_ESTIM     = 1
+        TRILAT_ESTIM_ALL = 2
+
     def __init__(self, mode=Mode.BASIC, interface="wlp2s0", force_iwlist=False):
         super().__init__()
         self.scanner = None
@@ -62,6 +68,7 @@ class Scanner:
         self.access_points = {}
         self.access_points_lock = Threading.new_lock()
 
+        self.last_mode = Scanner.PositioningMode.TRILATERATION
         self.current_aps = tuple()
         self.current_location = Point(0, 0)
 
@@ -181,7 +188,8 @@ class Scanner:
         except Exception as e:
             self._err(e, "Sampling ")
 
-    def _handle_position(self):
+    def _handle_position(self, mode=PositioningMode.TRILATERATION):
+        self.last_mode     = mode
         positions_filtered = []
 
         with self.access_points_lock:
@@ -197,12 +205,27 @@ class Scanner:
                 # elif not point:
                 #     print(style(f"Unknown AP {ssid} ({bssid}), please add it to the list?", Colours.FG.BRIGHT_RED))
 
-        if len(positions_filtered) > 2:
+        if len(positions_filtered) > 1:
             pos_sorted = list(sorted(positions_filtered, key=lambda x: x.radius, reverse=False))
-            p1, p2, p3 = pos_sorted[0], pos_sorted[1], pos_sorted[2]
 
-            self.current_aps = (p1, p2, p3)
-            self.current_location = p1.get_intersection(p2, p3)
+            if len(positions_filtered) > 2:
+                # If we found at least 3 APs
+                p1, p2, p3 = pos_sorted[0], pos_sorted[1], pos_sorted[2]
+
+                self.current_aps = (p1, p2, p3)
+                if mode == Scanner.PositioningMode.TRILATERATION:
+                    self.current_location = p1.intersection(p2, p3)
+                elif mode == Scanner.PositioningMode.TRILAT_ESTIM:
+                    self.current_location = p1.intersection_estimate(p2, p3, get_all=False)
+                elif mode == Scanner.PositioningMode.TRILAT_ESTIM_ALL:
+                    self.current_location = p1.intersection_estimate(p2, p3, get_all=True)
+            else:
+                p1, p2 = pos_sorted[0], pos_sorted[1]
+                self.current_aps = (p1, p2)
+                self.current_location = p1.intersection_estimate_other(p2)
+
+            if isinstance(self.current_location, Point):
+                self.current_location = (self.current_location,)
 
             print(style("Estimated AP distances:", Colours.FG.MAGENTA))
             print("\n".join("{0:<30} {1} @ {2}: {3}m".format(
@@ -213,12 +236,12 @@ class Scanner:
                 ) for p in self.current_aps))
 
             print(style("Updated device position: ", Colours.FG.GREEN) \
-                + style(f"{self.current_location}", Colours.FG.BRIGHT_GREEN))
+                + style(f"{', '.join(map(str, self.current_location))}", Colours.FG.BRIGHT_GREEN))
         else:
-            print(style(f"Not enough APs in range to get position? ({len(positions_filtered)})", Colours.FG.BRIGHT_RED))
+            print(style(f"Not enough APs in range to get position? ({len(positions_filtered)}:{positions_filtered})", Colours.FG.BRIGHT_RED))
 
     def _handle_plot(self):
-        self._handle_position()
+        self._handle_position(self.last_mode)
 
         plt.axis([-400, 400, -400, 400])
         plt.xlabel('X axis (m)')
@@ -236,14 +259,18 @@ class Scanner:
                          fontsize=10,
                          arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
 
-        plt.plot(self.current_location.x, self.current_location.y, 'bo')
-        plt.annotate(f"Device\n{self.current_location}",
-                     xy=(self.current_location.x, self.current_location.y),
-                     xycoords='data',
-                     xytext=(+0, -30),
-                     textcoords='offset points',
-                     fontsize=10,
-                     arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
+        single = len(self.current_location) == 1
+
+        for p in self.current_location:
+            plt.plot(p.x, p.y, 'bo')
+            plt.annotate(f"Device\n{p}" if single else "",
+                        xy=(p.x, p.y),
+                        xycoords='data',
+                        xytext=(0, -30),
+                        textcoords='offset points',
+                        fontsize=10,
+                        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2") if single else \
+                                   None)
 
         plt.xlim(-50, 50)
         plt.ylim(-50, 50)
@@ -264,11 +291,13 @@ class Commands:
     PRINT_CURRENT = "print"
     SAMPLE        = "sample"
     POSITION      = "position"
+    POSITION_EST  = "positionest"
+    POSITION_ALL  = "positionall"
     PLOT          = "plot"
     CLEAR         = "clear"
     EXIT          = "exit"
 
-    CHOICES = ( PRINT_CURRENT, SAMPLE, POSITION, PLOT, CLEAR, EXIT )
+    CHOICES = ( PRINT_CURRENT, SAMPLE, POSITION, POSITION_EST, POSITION_ALL, PLOT, CLEAR, EXIT )
 
     @staticmethod
     def handle_cmd(cmd, scanner):
@@ -284,12 +313,18 @@ class Commands:
             Commands.PRINT_CURRENT : scanner._handle_print,
             Commands.SAMPLE        : scanner._handle_sample,
             Commands.POSITION      : scanner._handle_position,
+            Commands.POSITION_EST  : scanner._handle_position,
+            Commands.POSITION_ALL  : scanner._handle_position,
             Commands.PLOT          : scanner._handle_plot,
             Commands.CLEAR         : scanner._handle_clear,
             Commands.EXIT          : scanner._handle_exit,
         }
 
-        handler.get(cmd)()
+        if cmd in (Commands.POSITION_EST, Commands.POSITION_ALL):
+            handler.get(cmd)(Scanner.PositioningMode.TRILAT_ESTIM if cmd == Commands.POSITION_EST else \
+                             Scanner.PositioningMode.TRILAT_ESTIM_ALL)
+        else:
+            handler.get(cmd)()
 
 
 if __name__ == "__main__":
@@ -299,6 +334,6 @@ if __name__ == "__main__":
         SNIFFING     = 2    # Advanced for Unix based on Beacon sniffer
     """
 
-    mode = int(sys.argv[2]) if sys.argv[1].lower() == "-m" else Scanner.Mode.BASIC
+    mode = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1].lower() == "-m" else Scanner.Mode.BASIC
     wifi_scanner = Scanner(mode=mode)
     wifi_scanner.start_interactive()
