@@ -28,8 +28,8 @@ class PacketTypes:
         BEACON     : "BEACON",
     }
 
-    # This includes: CTS, ACK, Data + CF-Poll
-    __IGNORE = ((1, 12), (1, 13), (2, 4))
+    # This includes: CTS, ACK, Data + CF-Poll, ...
+    __IGNORE = ((1, 12), (1, 13), (2, 4), (1,11), (0,13), (1,9))
 
     @classmethod
     def all(cls):
