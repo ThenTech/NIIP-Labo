@@ -97,10 +97,7 @@ class Position:
         if get_all:
             return (intersection,) + tuple(filter(None, positions))
 
-        for p in positions:
-            if p is None:
-                continue
-
+        for p in filter(None, positions):
             dist = p.distance_to(intersection)
             if dist < min_dist:
                 min_dist = dist
@@ -133,15 +130,14 @@ class Position:
         x1, y1 = p2.x, p2.y
         d = p1.distance_to(p2)
 
-        # No intersection
-        if d > r1 + r2:
+        # No intersection or One circle within other
+        if d > r1 + r2 or d < abs(r1-r2):
+            # Optionally get midpoint
+            # return Point((x0 + x1) / 2.0, (y0 + y1) / 2.0), None
             return None, None
 
-        # One circle within other
-        if d < abs(r1-r2):
-            return None, None
-
-        if isclose(d, 0.0) and isclose(r1, r2):
+        if isclose(d, 0.0):  # and isclose(r1, r2):
+            # Circles are the same
             return None, None
         else:
             a = (r1**2 - r2**2 + d**2) / (2.0 * d)
