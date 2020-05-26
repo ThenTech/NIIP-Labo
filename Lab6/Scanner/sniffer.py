@@ -28,7 +28,7 @@ class PacketTypes:
         BEACON     : "BEACON",
     }
 
-    # This includes: CTS, ACK, Data + CF-Poll
+    # This includes: CTS, ACK, Data + CF-Poll, ...
     __IGNORE = ((1, 12), (1, 13), (2, 4), (1,11), (0,13), (1,9))
 
     @classmethod
@@ -90,8 +90,9 @@ class Sniffer:
                 else:
                     self.access_points[mac].quality = rssi
         else:
-            # self._log(style(f"Packet has correct layer but wrong type {PacketTypes.to_string(ptype)}?", Colours.FG.BRIGHT_RED) + packet.summary())
             pass
+            # self._log(style(f"Packet has correct layer but wrong type {PacketTypes.to_string(ptype)}?", Colours.FG.BRIGHT_RED) \
+            #         + packet.summary())
 
     def _handle_packet_thread(self):
         try:
@@ -100,7 +101,7 @@ class Sniffer:
             except OSError:
                 sniff(iface=self.interface, prn=self._handle_packet)
         except Exception as e:
-            self._log(style(e, Colours.FG.BRIGHT_RED))
+            self._log(style(f"{e}", Colours.FG.BRIGHT_RED))
 
     def start(self):
         self._log("Start sniffing...")
