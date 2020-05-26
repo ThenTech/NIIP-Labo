@@ -86,7 +86,7 @@ class Sniffer:
                 if mac not in self.access_points:
                     ap = AccessPoint(ssid=Bits.bytes_to_str(packet.info), bssid=packet.addr2.upper(), quality=rssi, security="")
                     self.access_points[mac] = ap
-                    self._log(f"New Access Point @ {ap.bssid} '{ap.ssid}' (from {packet.summary()})")
+                    self._log(f"New Access Point @ {style(ap.bssid, Colours.FG.BRIGHT_BLACK)} : '{style(ap.ssid, Colours.FG.BRIGH_GREEN)}'")  # (from {packet.summary()})
                 else:
                     self.access_points[mac].quality = rssi
         else:

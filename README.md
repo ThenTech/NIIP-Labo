@@ -8,5 +8,5 @@ Lab | Report | Files
 3: MQTT & BLE | [link](Reports/lab3_mqtt_ble.pdf) | [link](Lab3)
 4: Visual Light Communication | [link](Reports/lab4_Visible-Light-Communication.pdf) | [link](Lab4)
 5: Opportunistic and mesh networking | [link](Reports/lab5_opportunistic_and_mesh_networking.pdf) | [link](Lab5)
-6: Proximity and indoor location determination | [link](Reports/) | [link](Lab6)
+6: Proximity and indoor location determination | [link](Reports/lab6_proximity_and_indoor_location_determination.pdf) | [link](Lab6)
 

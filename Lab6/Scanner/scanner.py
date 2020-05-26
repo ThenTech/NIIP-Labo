@@ -110,7 +110,7 @@ class Scanner:
         with self.access_points_lock:
             if self.access_points:
                 printed = "\n".join("{0:<30} {1}: {2}{3}".format(
-                        style(ssid , Colours.FG.BRIGHT_YELLOW),
+                        style(ssid, Colours.FG.BRIGHT_YELLOW),
                         style(f"({bssid})", Colours.FG.BRIGHT_BLACK),
                         round(v.get(), 2),
                         "%" if v.is_percentage() else "dBm"
@@ -234,7 +234,7 @@ class Scanner:
             pos_sorted = list(sorted(positions_filtered, key=lambda x: x.radius, reverse=False))
 
             if len(positions_filtered) > 2:
-                # If we found at least 3 APs
+                # If we found at least 3 APs, get intersections
                 p1, p2, p3 = pos_sorted[0], pos_sorted[1], pos_sorted[2]
 
                 self.current_aps = (p1, p2, p3)
@@ -245,6 +245,7 @@ class Scanner:
                 elif mode == Scanner.PositioningMode.TRILAT_ESTIM_ALL:
                     self.current_location = p1.intersection_estimate(p2, p3, get_all=True)
             else:
+                # If only 2 found, get only 2 intersections if available
                 p1, p2 = pos_sorted[0], pos_sorted[1]
                 self.current_aps = (p1, p2)
                 self.current_location = p1.intersection_estimate_other(p2)
