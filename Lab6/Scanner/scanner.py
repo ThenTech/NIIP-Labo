@@ -24,7 +24,8 @@ class Locations:
         # "50:C7:BF:FE:39:A7" : Point(  0.00,  0.00),  # Eskettiiit
         "00:14:5C:8C:EE:98" : Point(  3.70,  1.20),  # ItHurtsWhenIP
         "C0:25:E9:E0:EE:6E" : Point(  0.00,  9.00),  # G-Spot
-        "76:A8:FB:BF:90:BD" : Point(  1.80,  3.30),  # BramSpot
+        # "18:81:0E:87:E1:82" : Point(  0.00,  9.00),  # G-Spot
+        # "76:A8:FB:BF:90:BD" : Point(  1.80,  3.30),  # BramSpot
         "BE:86:B9:99:ED:D3" : Point(  1.80,  3.30),  # BramSpot
     }
 
@@ -224,7 +225,7 @@ class Scanner:
                     radius = self.get_ap_distance(quality.get(),
                                                   signal_frequency=5.0 if is_5g else 2.4,
                                                   signal_attentuation=5.0,
-                                                  signal_strength_ref=-51, signal_dist_ref=2.5)
+                                                  signal_strength_ref=-38, signal_dist_ref=3)
                     positions_filtered.append(Position((ssid, bssid), point, radius))
                 # elif not point:
                 #     print(style(f"Unknown AP {ssid} ({bssid}), please add it to the list?", Colours.FG.BRIGHT_RED))
@@ -366,8 +367,8 @@ if __name__ == "__main__":
         where (x_offset, y_offset) is the position of (0, 0) point (from left bottom corner)
         and scale is the size in pixels of 1 unit.
     """
-    # iface, mode, bg_img = "wlp2s0", Scanner.Mode.SNIFFING, "./locations/bram.png;10;10;180"
-    iface, mode, bg_img = "Wi-Fi", Scanner.Mode.BASIC, "./locations/william.png;478;973;101"
+    iface, mode, bg_img = "wlp2s0mon", Scanner.Mode.SNIFFING, "./locations/bram.png;10;10;180"
+    #iface, mode, bg_img = "Wi-Fi", Scanner.Mode.BASIC, "./locations/william.png;478;973;101"
 
     i = 1
     while i < len(sys.argv):
