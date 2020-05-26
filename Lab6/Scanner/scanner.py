@@ -366,7 +366,7 @@ if __name__ == "__main__":
         where (x_offset, y_offset) is the position of (0, 0) point (from left bottom corner)
         and scale is the size in pixels of 1 unit.
     """
-    # iface, mode, bg_img = "wlp2s0", Scanner.Mode.SNIFFING, "./locations/bram.png;10;10;180"
+    # iface, mode, bg_img = "wlp2s0mon", Scanner.Mode.SNIFFING, "./locations/bram.png;10;10;180"
     iface, mode, bg_img = "Wi-Fi", Scanner.Mode.BASIC, "./locations/william.png;478;973;101"
 
     i = 1

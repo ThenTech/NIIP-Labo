@@ -26,13 +26,18 @@ class Quality:
 
     VALUE_COUNT = 6
 
-    def __init__(self, value=0, tag=TAG_PERCENTAGE):
+    def __init__(self, value=0, tag=TAG_PERCENTAGE, avg_ratio=0.8):
+        """
+            Uses moving average. Use avg_ratio to also include percentage of previous average in calculation.
+            avg_ratio == 0.0 will update only using the new value.
+        """
         self.tag = tag
 
         self.average   = 0
         self.avg_idx   = 0
         self.avg_sum   = 0
         self.avg_cache = [0.0] * Quality.VALUE_COUNT
+        self.avg_ratio = avg_ratio
 
     def get(self):
         return self.average
@@ -52,7 +57,7 @@ class Quality:
 
         if self.avg_idx == Quality.VALUE_COUNT:
             # Only update after SIZE measurements, else avg is < SIZE numbers / SIZE and lower than expected
-            self.average = self.avg_sum / Quality.VALUE_COUNT
+            self.average = (self.average * self.avg_ratio) + (self.avg_sum / Quality.VALUE_COUNT) * (1.0 - self.avg_ratio)
             self.avg_idx = 0
 
 
