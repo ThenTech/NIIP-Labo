@@ -7,7 +7,7 @@ class Threading:
         """
         Create and start a new thread.
         """
-        tr = Thread(target=func, args=args, daemon=False)
+        tr = Thread(target=func, args=args, daemon=daemon)
         tr.start()
         return tr
 
